@@ -102,6 +102,7 @@
   /* ── LAYOUT ── */
   #app {
     display: flex;
+    align-items: flex-start;
     min-height: calc(100vh - 56px);
     overflow: hidden;
     position: relative;
@@ -119,7 +120,7 @@
     flex-direction: column;
     padding: 10px 0 18px;
     position: sticky;
-    top: 0;
+    top: 56px;
     height: calc(100vh - 56px);
     overflow-y: auto;
     overflow-x: hidden;
@@ -1078,10 +1079,10 @@
           <div class="page-sub">All raw charge entries across SHIPPING · CFS · GURU</div>
         </div>
         <div style="display:flex;gap:10px">
-          <select style="font-size:13px;padding:6px 10px" id="dsFilterLC">
+          <select style="font-size:13px;padding:6px 10px" id="dsFilterLC" onchange="filterDatasheet()">
             <option>All LCs</option>
           </select>
-          <select style="font-size:13px;padding:6px 10px" id="dsFilterType">
+          <select style="font-size:13px;padding:6px 10px" id="dsFilterType" onchange="filterDatasheet()">
             <option>All Types</option>
             <option>SHIPPING</option><option>CFS</option><option>GURU</option>
           </select>
@@ -1117,7 +1118,7 @@
           <div class="page-sub">SUMIFS aggregation by LC · Bill · Category</div>
         </div>
         <div style="display:flex;gap:10px;align-items:center">
-          <select style="font-size:13px;padding:6px 10px" id="shippingLC" onchange="switchPivotLC(this.value,'ship')">
+          <select style="font-size:13px;padding:6px 10px" id="shippingLC" onchange="loadPivot(this.value,'SHIPPING')">
             <option value="">Select LC</option>
           </select>
           <button class="btn btn-primary btn-sm admin-only" onclick="openAddEntryModal('SHIPPING','shippingLC')">＋ Add Entry</button>
@@ -1241,7 +1242,7 @@
           <div class="page-sub">Customs bond tracking — duty deferred at bonding, paid at de-bonding</div>
         </div>
         <div style="display:flex;gap:10px;align-items:center">
-          <select style="font-size:13px;padding:6px 10px" id="bondingLC">
+          <select style="font-size:13px;padding:6px 10px" id="bondingLC" onchange="loadBonding(this.value)">
             <option value="">Select LC</option>
           </select>
           <button class="btn btn-primary btn-sm admin-only" onclick="openBondModal()">＋ Bond Entry</button>
@@ -1276,7 +1277,7 @@
           <div class="page-title">Cost Breakdown — Per Metric Tonne</div>
           <div class="page-sub">Final LC cost computation used for pricing & analysis</div>
         </div>
-        <select style="font-size:13px;padding:6px 10px" onchange="switchCostLC(this.value)">
+        <select style="font-size:13px;padding:6px 10px" onchange="loadCostBreakdown(this.value)">
           <option value="1">LC 01</option><option value="2">LC 02</option>
           <option value="4">LC 04</option>
         </select>
@@ -1436,7 +1437,7 @@
                     <span class="keyword-tag">ORIGIN THC</span>
                     <span class="keyword-tag">OD THC</span>
                   </td>
-                  <td><button class="btn btn-outline btn-sm admin-only edit-btn">Edit</button></td>
+                  <td><button class="btn btn-outline btn-sm admin-only edit-btn" onclick="editMapping(this)">Edit</button></td>
                 </tr>
                 <tr>
                   <td><strong>OD/CMCP/CLTY/OD THC.P</strong></td>
@@ -1448,7 +1449,7 @@
                     <span class="keyword-tag">OD/CMCP</span>
                     <span class="keyword-tag">CLAILITY</span>
                   </td>
-                  <td><button class="btn btn-outline btn-sm admin-only edit-btn">Edit</button></td>
+                  <td><button class="btn btn-outline btn-sm admin-only edit-btn" onclick="editMapping(this)">Edit</button></td>
                 </tr>
                 <tr>
                   <td><strong>CTMC / CMC / CEIW</strong></td>
@@ -1460,7 +1461,7 @@
                     <span class="keyword-tag">CONTAINER MANAGEMENT</span>
                     <span class="keyword-tag">TERMINAL MOVEMENT</span>
                   </td>
-                  <td><button class="btn btn-outline btn-sm admin-only edit-btn">Edit</button></td>
+                  <td><button class="btn btn-outline btn-sm admin-only edit-btn" onclick="editMapping(this)">Edit</button></td>
                 </tr>
                 <tr>
                   <td><strong>LOLO / LOFC</strong></td>
@@ -1471,7 +1472,7 @@
                     <span class="keyword-tag">LIFT ON LIFT OFF</span>
                     <span class="keyword-tag">LIFT OFF FROM CONTAINER</span>
                   </td>
-                  <td><button class="btn btn-outline btn-sm admin-only edit-btn">Edit</button></td>
+                  <td><button class="btn btn-outline btn-sm admin-only edit-btn" onclick="editMapping(this)">Edit</button></td>
                 </tr>
                 <tr>
                   <td><strong>WASHING /CLEANING</strong></td>
@@ -1481,7 +1482,7 @@
                     <span class="keyword-tag">CLEANING</span>
                     <span class="keyword-tag">CONTAINER CLEANING</span>
                   </td>
-                  <td><button class="btn btn-outline btn-sm admin-only edit-btn">Edit</button></td>
+                  <td><button class="btn btn-outline btn-sm admin-only edit-btn" onclick="editMapping(this)">Edit</button></td>
                 </tr>
                 <tr>
                   <td><strong>CAF</strong></td>
@@ -1491,7 +1492,7 @@
                     <span class="keyword-tag">CONTAINER HANDLING</span>
                     <span class="keyword-tag">CURRENCY ADJ FACTOR</span>
                   </td>
-                  <td><button class="btn btn-outline btn-sm admin-only edit-btn">Edit</button></td>
+                  <td><button class="btn btn-outline btn-sm admin-only edit-btn" onclick="editMapping(this)">Edit</button></td>
                 </tr>
                 <tr>
                   <td><strong>SRV CHG / SERVICE CHG</strong></td>
@@ -1502,7 +1503,7 @@
                     <span class="keyword-tag">SERVICE CHARGE</span>
                     <span class="keyword-tag">AGENCY FEE</span>
                   </td>
-                  <td><button class="btn btn-outline btn-sm admin-only edit-btn">Edit</button></td>
+                  <td><button class="btn btn-outline btn-sm admin-only edit-btn" onclick="editMapping(this)">Edit</button></td>
                 </tr>
                 <tr>
                   <td><strong>BON EXP / BOND EXP</strong></td>
@@ -1512,7 +1513,7 @@
                     <span class="keyword-tag">BOND EXP</span>
                     <span class="keyword-tag">BOND EXPENSES</span>
                   </td>
-                  <td><button class="btn btn-outline btn-sm admin-only edit-btn">Edit</button></td>
+                  <td><button class="btn btn-outline btn-sm admin-only edit-btn" onclick="editMapping(this)">Edit</button></td>
                 </tr>
                 <tr>
                   <td><strong>OTHER CHARGES</strong></td>
@@ -1523,7 +1524,7 @@
                     <span class="keyword-tag">MISCELLANEOUS</span>
                     <span class="keyword-tag">OTHERS</span>
                   </td>
-                  <td><button class="btn btn-outline btn-sm admin-only edit-btn">Edit</button></td>
+                  <td><button class="btn btn-outline btn-sm admin-only edit-btn" onclick="editMapping(this)">Edit</button></td>
                 </tr>
               </tbody>
             </table>
@@ -1540,8 +1541,8 @@
           <div class="page-sub">Summary across all LCs — FY 2024-25</div>
         </div>
         <div style="display:flex;gap:10px">
-          <button class="btn btn-outline btn-sm">⬇ Export Excel</button>
-          <button class="btn btn-primary btn-sm">⬇ Export PDF</button>
+          <button class="btn btn-outline btn-sm" onclick="exportReport('excel')">⬇ Export Excel</button>
+          <button class="btn btn-primary btn-sm" onclick="exportReport('pdf')">⬇ Export PDF</button>
         </div>
       </div>
       <div class="card">
@@ -1811,7 +1812,7 @@
     </div>
     <div class="modal-foot">
       <button class="btn btn-outline" onclick="closeModal('addLCModal')">Cancel</button>
-      <button class="btn btn-primary">＋ Create LC</button>
+      <button class="btn btn-primary" onclick="createLC()">＋ Create LC</button>
     </div>
   </div>
 </div>
@@ -1876,7 +1877,7 @@
     </div>
     <div class="modal-foot">
       <button class="btn btn-outline" onclick="closeModal('addMapModal')">Cancel</button>
-      <button class="btn btn-primary">💾 Save Mapping</button>
+      <button class="btn btn-primary" onclick="saveMapping()">💾 Save Mapping</button>
     </div>
   </div>
 </div>
@@ -1985,7 +1986,7 @@
         <input type="text" placeholder="KEYWORD1, KEYWORD 2, VARIANT NAME">
       </div>
       <div class="btn-row">
-        <button class="btn btn-outline btn-sm">＋ Add to MAP</button>
+        <button class="btn btn-outline btn-sm" onclick="saveSettings()">💾 Save Settings</button>
       </div>
     </div>
     <div class="modal-foot">
@@ -2077,7 +2078,7 @@
     </div>
     <div class="modal-foot">
       <button class="btn btn-outline" onclick="closeModal('addWarehouseModal')">Cancel</button>
-      <button class="btn btn-primary">＋ Save Entry</button>
+      <button class="btn btn-primary" onclick="saveWarehouseEntry()">＋ Save Entry</button>
     </div>
   </div>
 </div>
@@ -2155,7 +2156,7 @@
     </div>
     <div class="modal-foot">
       <button class="btn btn-outline" onclick="closeModal('addBondModal')">Cancel</button>
-      <button class="btn btn-primary">＋ Save Entry</button>
+      <button class="btn btn-primary" onclick="saveBondEntry()">＋ Save Entry</button>
     </div>
   </div>
 </div>
@@ -2313,8 +2314,8 @@
     document.querySelectorAll('.edit-btn').forEach(el => { el.style.display = currentUser.role === 'admin' ? '' : 'none'; });
     // Render user table if admin
     if (currentUser.role === 'admin') renderUserTable();
-    // Render docs
-    renderDocs();
+    // Post-login data init (async — non-blocking)
+    postLoginInit();
   }
 
   // ── ROLE GUARD — call before any data modification ──
@@ -2389,13 +2390,7 @@
   // ══════════════════════════════════════════════
   // NAV
   // ══════════════════════════════════════════════
-  function showSection(id, el) {
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    const sec = document.getElementById(id);
-    if (sec) sec.classList.add('active');
-    if (el) el.classList.add('active');
-  }
+  // showSection now defined in extended JS below
 
   // ══════════════════════════════════════════════
   // MODALS
@@ -2518,52 +2513,13 @@
     }
   }
 
-  function saveAllEntries() {
-    const rows = document.getElementById('entryRows').querySelectorAll('[id^="erow_"]');
-    let hasError = false;
-    rows.forEach(row => {
-      const id = row.id.replace('erow_', '');
-      const part = document.getElementById('part_' + id).value.trim();
-      const mapped = document.getElementById('mapped_' + id).value;
-      const amount = document.getElementById('amount_' + id).value;
-      if (!part || !amount || mapped.startsWith('⚠')) { hasError = true; return; }
-      const type = resolveMap(part)?.type || 'SHIPPING';
-      savedBillEntries.push({ part, mapped, type, amount });
-      // Add to saved table
-      const tbody = document.getElementById('savedEntriesTbody');
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${part}</td><td>${mapped}</td><td><span class="tbl-pill pill-${type.toLowerCase().substring(0,4)}">${type}</span></td><td class="num">₹${parseFloat(amount).toLocaleString('en-IN')}</td><td><button onclick="this.closest('tr').remove()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px">✕</button></td>`;
-      tbody.appendChild(tr);
-      row.remove();
-    });
-    if (hasError) {
-      document.getElementById('mapAlert').style.display = 'flex';
-      return;
-    }
-    document.getElementById('mapAlert').style.display = 'none';
-    document.getElementById('savedEntriesWrap').style.display = 'block';
-    entryRowCount = 0;
-    addEntryRow(); // keep one empty row ready
-  }
+  // saveAllEntries now defined in extended JS below
 
   // ── ADD ENTRY MODAL (Shipping / CFS / Guru) ──
   let aeEntryCount = 0;
   const aeSavedEntries = [];
 
-  function openAddEntryModal(type, lcSelectId) {
-    const lc = document.getElementById(lcSelectId).value;
-    document.getElementById('ae_lc').value = lc;
-    document.getElementById('ae_type').value = type;
-    const typeColors = { SHIPPING: '#1A2E5C', CFS: '#1A5C2A', GURU: '#8B1A1A' };
-    document.getElementById('ae_type').style.color = typeColors[type] || 'var(--ink)';
-    document.getElementById('addEntryModalTitle').textContent = 'ADD ' + type + ' ENTRY — ' + lc;
-    document.getElementById('ae_entryRows').innerHTML = '';
-    document.getElementById('ae_savedWrap').style.display = 'none';
-    document.getElementById('ae_savedTbody').innerHTML = '';
-    aeEntryCount = 0;
-    addAERow();
-    openModal('addEntryModal');
-  }
+  // openAddEntryModal now defined in extended JS below
 
   function addAERow() {
     aeEntryCount++;
@@ -2602,35 +2558,9 @@
     }
   }
 
-  function saveAEEntries() {
-    const rows = document.getElementById('ae_entryRows').querySelectorAll('[id^="aerow_"]');
-    let saved = 0;
-    rows.forEach(row => {
-      const id = row.id.replace('aerow_', '');
-      const part = document.getElementById('aepart_' + id)?.value?.trim();
-      const mapped = document.getElementById('aemapped_' + id)?.value;
-      const amount = document.getElementById('aeamount_' + id)?.value;
-      if (!part || !amount || !mapped || mapped.startsWith('⚠')) return;
-      const tbody = document.getElementById('ae_savedTbody');
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${part}</td><td>${mapped}</td><td class="num">₹${parseFloat(amount).toLocaleString('en-IN')}</td><td><button onclick="this.closest('tr').remove()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px">✕</button></td>`;
-      tbody.appendChild(tr);
-      row.remove();
-      saved++;
-    });
-    if (saved > 0) {
-      document.getElementById('ae_savedWrap').style.display = 'block';
-      aeEntryCount = 0;
-      addAERow();
-    }
-  }
+  // saveAEEntries now defined in extended JS below
 
-  // ── BOND MODAL — auto-fill LC from page dropdown ──
-  function openBondModal() {
-    const lc = document.getElementById('bondingLC').value;
-    document.getElementById('b_lc_display').value = lc;
-    openModal('addBondModal');
-  }
+  // openBondModal now defined in extended JS below
 
   // ── DOCUMENT LIST — empty by default (connect Supabase for live data) ──
   let documents = JSON.parse(localStorage.getItem('kamakya_docs') || '[]');
@@ -2748,20 +2678,705 @@
     `;
   }
 
-  // ── MAP FILTER ──
+  // filterMap now defined in extended JS below
+
+
+  // ══════════════════════════════════════════════
+  // SHARED HELPERS
+  // ══════════════════════════════════════════════
+  function fmt(n) { return '\u20B9' + Math.round(n).toLocaleString('en-IN'); }
+  function fmtUSD(n) { return '$' + Number(n).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+  function showToast(msg, type) {
+    const t = document.createElement('div');
+    const colors = { ok:'var(--green)', err:'var(--red)', info:'var(--gold)' };
+    t.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;background:var(--ink2);border:1px solid ' + (colors[type]||colors.info) + ';color:var(--gold-light);padding:10px 18px;border-radius:6px;font-family:Cinzel,serif;font-size:12px;box-shadow:0 4px 20px rgba(0,0,0,0.4);transition:opacity .4s';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 3000);
+  }
+
+  // ── Populate all LC dropdowns after login ──
+  async function populateLCDropdowns() {
+    const { data: lcs } = await _sb.from('lc_master').select('id,lc_no').order('lc_no');
+    if (!lcs || !lcs.length) return;
+    const selects = ['shippingLC','cfsLC','guruLC','warehouseLC','bondingLC'];
+    selects.forEach(sid => {
+      const el = document.getElementById(sid);
+      if (!el) return;
+      el.innerHTML = '<option value="">Select LC</option>';
+      lcs.forEach(lc => {
+        const o = document.createElement('option');
+        o.value = lc.id; o.textContent = lc.lc_no;
+        el.appendChild(o);
+      });
+    });
+    // c_lc inside add charge modal
+    const cLc = document.getElementById('c_lc');
+    if (cLc) {
+      cLc.innerHTML = '';
+      lcs.forEach(lc => {
+        const o = document.createElement('option');
+        o.value = lc.id; o.textContent = lc.lc_no;
+        cLc.appendChild(o);
+      });
+    }
+    // cost breakdown select
+    const costSel = document.querySelector('#costBreakdown select[onchange]');
+    if (costSel) {
+      costSel.innerHTML = '';
+      lcs.forEach(lc => {
+        const o = document.createElement('option');
+        o.value = lc.id; o.textContent = lc.lc_no;
+        costSel.appendChild(o);
+      });
+    }
+    // also populate dsFilterLC
+    const dsLc = document.getElementById('dsFilterLC');
+    if (dsLc) {
+      dsLc.innerHTML = '<option value="">All LCs</option>';
+      lcs.forEach(lc => {
+        const o = document.createElement('option');
+        o.value = lc.id; o.textContent = lc.lc_no;
+        dsLc.appendChild(o);
+      });
+    }
+  }
+
+  // ── Load dashboard KPIs and LC table ──
+  async function loadDashboard() {
+    const { data: lcs } = await _sb.from('lc_master').select('*');
+    if (!lcs) return;
+    document.getElementById('kpiTotalLC').textContent = lcs.length;
+    document.getElementById('kpiTotalUSD').textContent = fmtUSD(lcs.reduce((s,l) => s + (l.qty_mt||0)*(l.rate_usd||0), 0));
+    document.getElementById('kpiTotalMT').textContent = lcs.reduce((s,l) => s + (l.qty_mt||0), 0).toFixed(1);
+    document.getElementById('kpiSettled').textContent = lcs.filter(l => l.status === 'Settled').length;
+    document.getElementById('kpiPending').textContent = lcs.filter(l => l.status !== 'Settled').length;
+    // LC status table
+    document.getElementById('dashLCTableBody').innerHTML = lcs.map(l => `
+      <tr>
+        <td>${l.lc_no}</td>
+        <td>${l.company||'—'}</td>
+        <td class="num">${(l.qty_mt||0).toFixed(1)}</td>
+        <td class="num">${fmtUSD((l.qty_mt||0)*(l.rate_usd||0))}</td>
+        <td><span class="status status-${(l.status||'open').toLowerCase()}">${l.status||'Open'}</span></td>
+      </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--gold);opacity:0.5;font-style:italic">No LCs found.</td></tr>';
+    // LC Register KPIs too
+    document.getElementById('lcKpiTotal').textContent = lcs.length;
+    document.getElementById('lcKpiSettled').textContent = lcs.filter(l=>l.status==='Settled').length;
+    document.getElementById('lcKpiBonded').textContent = lcs.filter(l=>l.status==='Bonded').length;
+    document.getElementById('lcKpiOpen').textContent = lcs.filter(l=>l.status==='Open').length;
+    document.getElementById('lcKpiUSD').textContent = fmtUSD(lcs.reduce((s,l)=>s+(l.qty_mt||0)*(l.rate_usd||0),0));
+    document.getElementById('lcKpiMT').textContent = lcs.reduce((s,l)=>s+(l.qty_mt||0),0).toFixed(1);
+    // LC register table
+    document.getElementById('lcRegisterBody').innerHTML = lcs.map(l => `
+      <tr data-status="${l.status||'Open'}">
+        <td><strong>${l.lc_no}</strong></td>
+        <td>${l.company||'—'}</td>
+        <td>${l.opening_date||'—'}</td>
+        <td>${l.expiry_date||'—'}</td>
+        <td class="num">${(l.qty_mt||0).toFixed(1)}</td>
+        <td class="num">${l.bags||'—'}</td>
+        <td class="num">${l.rate_usd||'—'}</td>
+        <td class="num">${l.open_rate||'—'}</td>
+        <td class="num">${l.settle_rate||'—'}</td>
+        <td class="num">${l.credit_days||'—'}</td>
+        <td class="num">${fmt((l.qty_mt||0)*(l.rate_usd||0)*(l.settle_rate||84.15))}</td>
+        <td><span class="status status-${(l.status||'open').toLowerCase()}">${l.status||'Open'}</span></td>
+        <td><button class="btn btn-outline btn-sm" onclick="openLCDetail('${l.lc_no}')">View</button></td>
+      </tr>`).join('') || '<tr><td colspan="13" style="text-align:center;padding:32px;color:var(--gold);opacity:0.5;font-style:italic">No LC records. Add your first LC.</td></tr>';
+  }
+
+  // ══════════════════════════════════════════════
+  // CREATE LC
+  // ══════════════════════════════════════════════
+  async function createLC() {
+    if (!requireAdmin('create LCs')) return;
+    const modal = document.getElementById('addLCModal');
+    const inputs = modal.querySelectorAll('input,select');
+    const get = id => modal.querySelector('#'+id)?.value?.trim() || null;
+    const lcNo = modal.querySelectorAll('input')[0]?.value?.trim();
+    const company = modal.querySelectorAll('input')[1]?.value?.trim();
+    if (!lcNo || !company) { showToast('LC Number and Company are required.', 'err'); return; }
+    const qtyMT = parseFloat(modal.querySelectorAll('input[type=number]')[0]?.value) || 0;
+    const bags  = parseInt(modal.querySelectorAll('input[type=number]')[1]?.value) || Math.round(qtyMT * 40);
+    const rateUSD = parseFloat(modal.querySelectorAll('input[type=number]')[2]?.value) || 0;
+    const openRate   = parseFloat(modal.querySelectorAll('input[type=number]')[3]?.value) || 0;
+    const settleRate = parseFloat(modal.querySelectorAll('input[type=number]')[4]?.value) || 0;
+    const creditDays = parseInt(modal.querySelectorAll('input[type=number]')[5]?.value) || 120;
+    const creditRate = parseFloat(modal.querySelectorAll('input[type=number]')[6]?.value) || 4.8;
+    const dateInputs = modal.querySelectorAll('input[type=date]');
+    const openDate   = dateInputs[0]?.value || null;
+    const expiryDate = dateInputs[1]?.value || null;
+    const { error } = await _sb.from('lc_master').insert({
+      lc_no: lcNo, company, qty_mt: qtyMT, bags, rate_usd: rateUSD,
+      open_rate: openRate, settle_rate: settleRate, credit_days: creditDays,
+      credit_rate: creditRate, opening_date: openDate, expiry_date: expiryDate,
+      status: 'Open'
+    });
+    if (error) { showToast('Error: ' + error.message, 'err'); return; }
+    showToast('✅ LC ' + lcNo + ' created!', 'ok');
+    closeModal('addLCModal');
+    modal.querySelectorAll('input').forEach(i => i.value = '');
+    await loadDashboard();
+    await populateLCDropdowns();
+  }
+
+  // ══════════════════════════════════════════════
+  // SAVE CHARGE ENTRIES (Add Charge Modal) → Supabase
+  // ══════════════════════════════════════════════
+  async function saveAllEntries() {
+    if (!requireAdmin('save charges')) return;
+    const rows = document.getElementById('entryRows').querySelectorAll('[id^="erow_"]');
+    let hasError = false;
+    const toInsert = [];
+    rows.forEach(row => {
+      const id = row.id.replace('erow_', '');
+      const part   = document.getElementById('part_' + id)?.value?.trim();
+      const mapped = document.getElementById('mapped_' + id)?.value;
+      const amount = parseFloat(document.getElementById('amount_' + id)?.value);
+      const mt     = parseFloat(document.getElementById('mt_' + id)?.value) || null;
+      if (!part || !amount || !mapped || mapped.startsWith('\u26A0')) { hasError = true; return; }
+      const type = resolveMap(part)?.type || 'SHIPPING';
+      toInsert.push({
+        lc_id: document.getElementById('c_lc').value,
+        bill_no: document.getElementById('c_bill').value,
+        bill_date: document.getElementById('c_date').value || null,
+        particular_raw: part, mapped_category: mapped,
+        charge_type: type, amount_inr: amount, qty_mt: mt
+      });
+    });
+    if (hasError) { document.getElementById('mapAlert').style.display = 'flex'; return; }
+    if (!toInsert.length) return;
+    const { error } = await _sb.from('charges').insert(toInsert);
+    if (error) { showToast('Error: ' + error.message, 'err'); return; }
+    document.getElementById('mapAlert').style.display = 'none';
+    // Show saved preview
+    const tbody = document.getElementById('savedEntriesTbody');
+    toInsert.forEach(e => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = '<td>'+e.particular_raw+'</td><td>'+e.mapped_category+'</td><td><span class="tbl-pill pill-'+e.charge_type.toLowerCase().substring(0,4)+'">'+e.charge_type+'</span></td><td class="num">'+fmt(e.amount_inr)+'</td><td><button onclick="this.closest(\'tr\').remove()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px">\u2715</button></td>';
+      tbody.appendChild(tr);
+    });
+    document.getElementById('savedEntriesWrap').style.display = 'block';
+    document.getElementById('entryRows').querySelectorAll('[id^="erow_"]').forEach(r => r.remove());
+    entryRowCount = 0; addEntryRow();
+    showToast('✅ ' + toInsert.length + ' entr' + (toInsert.length > 1 ? 'ies' : 'y') + ' saved!', 'ok');
+    await loadDatasheet();
+  }
+
+  // ══════════════════════════════════════════════
+  // SAVE AE ENTRIES (Shipping/CFS/Guru modals) → Supabase
+  // ══════════════════════════════════════════════
+  async function saveAEEntries() {
+    if (!requireAdmin('save entries')) return;
+    const rows = document.getElementById('ae_entryRows').querySelectorAll('[id^="aerow_"]');
+    const toInsert = [];
+    rows.forEach(row => {
+      const id = row.id.replace('aerow_', '');
+      const part   = document.getElementById('aepart_' + id)?.value?.trim();
+      const mapped = document.getElementById('aemapped_' + id)?.value;
+      const amount = parseFloat(document.getElementById('aeamount_' + id)?.value);
+      if (!part || !amount || !mapped || mapped.startsWith('\u26A0')) return;
+      toInsert.push({
+        lc_id: document.getElementById('ae_lc').dataset.lcId || null,
+        bill_no: document.getElementById('ae_bill').value,
+        bill_date: document.getElementById('ae_date').value || null,
+        particular_raw: part, mapped_category: mapped,
+        charge_type: document.getElementById('ae_type').value,
+        amount_inr: amount
+      });
+    });
+    if (!toInsert.length) { showToast('No valid entries to save.', 'err'); return; }
+    const { error } = await _sb.from('charges').insert(toInsert);
+    if (error) { showToast('Error: ' + error.message, 'err'); return; }
+    const tbody = document.getElementById('ae_savedTbody');
+    toInsert.forEach(e => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = '<td>'+e.particular_raw+'</td><td>'+e.mapped_category+'</td><td class="num">'+fmt(e.amount_inr)+'</td><td><button onclick="this.closest(\'tr\').remove()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px">\u2715</button></td>';
+      tbody.appendChild(tr);
+    });
+    document.getElementById('ae_savedWrap').style.display = 'block';
+    document.getElementById('ae_entryRows').querySelectorAll('[id^="aerow_"]').forEach(r => r.remove());
+    aeEntryCount = 0; addAERow();
+    showToast('✅ ' + toInsert.length + ' entr' + (toInsert.length > 1 ? 'ies' : 'y') + ' saved!', 'ok');
+    const lcId = document.getElementById('ae_lc').dataset.lcId;
+    const type = document.getElementById('ae_type').value;
+    if (lcId) await loadPivot(lcId, type);
+  }
+
+  // ══════════════════════════════════════════════
+  // SAVE WAREHOUSE ENTRY → Supabase
+  // ══════════════════════════════════════════════
+  async function saveWarehouseEntry() {
+    if (!requireAdmin('save warehouse entries')) return;
+    const modal = document.getElementById('addWarehouseModal');
+    const inputs = modal.querySelectorAll('input');
+    const lc_id = document.getElementById('warehouseLC').value;
+    if (!lc_id) { showToast('Please select an LC first.', 'err'); return; }
+    const invoice_no = inputs[1]?.value?.trim();
+    const entry_date = inputs[2]?.value || null;
+    const sq_mtr    = parseFloat(document.getElementById('w_sqm').value) || 0;
+    const from_date = document.getElementById('w_from').value || null;
+    const to_date   = document.getElementById('w_to').value || null;
+    const rate      = parseFloat(document.getElementById('w_rate').value) || 60;
+    const insurance = parseFloat(document.getElementById('w_insurance').value) || 0;
+    const weeks_raw = document.getElementById('w_weeks').value;
+    const weeks     = parseInt(weeks_raw) || 0;
+    const wh_charges= sq_mtr * weeks * rate;
+    const subtotal  = wh_charges + insurance;
+    const igst      = subtotal * 0.18;
+    const total     = subtotal + igst;
+    const container_no = modal.querySelectorAll('input[placeholder="MSCU1234567"]')[0]?.value?.trim() || null;
+    const gst_invoice  = modal.querySelectorAll('input[placeholder="GST-INV-001"]')[0]?.value?.trim() || null;
+    const { error } = await _sb.from('warehouse').insert({
+      lc_id, invoice_no, entry_date, sq_mtr, from_date, to_date, weeks, rate_per_sqm_week: rate,
+      wh_charges, insurance, subtotal, igst, total, container_no, gst_invoice_no: gst_invoice
+    });
+    if (error) { showToast('Error: ' + error.message, 'err'); return; }
+    showToast('✅ Warehouse entry saved!', 'ok');
+    closeModal('addWarehouseModal');
+    modal.querySelectorAll('input').forEach(i => i.value = '');
+    ['w_weeks','w_charges','w_subtotal','w_igst','w_total'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    await loadWarehouse(lc_id);
+  }
+
+  // ── Load warehouse table ──
+  async function loadWarehouse(lcId) {
+    if (!lcId) return;
+    const { data, error } = await _sb.from('warehouse').select('*').eq('lc_id', lcId).order('entry_date');
+    const tbody = document.getElementById('warehouseBody');
+    if (!tbody) return;
+    if (error || !data || !data.length) {
+      tbody.innerHTML = '<tr><td colspan="16" style="text-align:center;color:var(--gold);opacity:0.5;padding:32px;font-style:italic">No warehouse entries for this LC.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.map(r => `
+      <tr>
+        <td>${r.entry_date||'—'}</td>
+        <td>${r.invoice_no||'—'}</td>
+        <td class="num">${r.sq_mtr||'—'}</td>
+        <td>${r.from_date||'—'}</td>
+        <td>${r.to_date||'—'}</td>
+        <td>${r.container_no||'—'}</td>
+        <td class="num">${r.weeks||'—'}</td>
+        <td class="num">${r.rate_per_sqm_week||'—'}</td>
+        <td class="num">${fmt(r.wh_charges||0)}</td>
+        <td class="num">${fmt(r.insurance||0)}</td>
+        <td class="num">${fmt(r.subtotal||0)}</td>
+        <td class="num" style="color:var(--red)">${fmt(r.igst||0)}</td>
+        <td class="num"><strong>${fmt(r.total||0)}</strong></td>
+        <td>${r.delivery_date||'—'}</td>
+        <td class="num">${r.mt_delivered||'—'}</td>
+        <td class="num">${r.bal_sqm||'—'}</td>
+      </tr>`).join('');
+  }
+
+  // ══════════════════════════════════════════════
+  // SAVE BOND ENTRY → Supabase
+  // ══════════════════════════════════════════════
+  async function saveBondEntry() {
+    if (!requireAdmin('save bond entries')) return;
+    const lc_id = document.getElementById('bondingLC').value;
+    if (!lc_id) { showToast('Please select an LC first.', 'err'); return; }
+    const modal = document.getElementById('addBondModal');
+    const bond_type  = document.getElementById('b_type').value;
+    const bond_date  = modal.querySelector('input[type=date]').value || null;
+    const be_no      = modal.querySelector('input[placeholder="BE-2024-0412"]').value.trim();
+    const bags       = parseFloat(document.getElementById('b_bags').value) || 0;
+    const mt         = bags / 40;
+    const rate_usd   = parseFloat(document.getElementById('b_rate_usd').value) || 0;
+    const conv_rate  = parseFloat(document.getElementById('b_conv').value) || 0;
+    const inr_value  = mt * rate_usd * conv_rate;
+    const duty_bond  = inr_value * 0.075;
+    const surcharge  = duty_bond * 0.10;
+    const igst       = (inr_value + duty_bond + surcharge) * 0.18;
+    const total_duty = duty_bond + surcharge + igst;
+    const { error } = await _sb.from('bonding').insert({
+      lc_id, bond_type, bond_date, be_no, bags, mt, rate_usd, conv_rate,
+      inr_value, duty_bond, surcharge, igst, total_duty
+    });
+    if (error) { showToast('Error: ' + error.message, 'err'); return; }
+    showToast('✅ Bond entry saved!', 'ok');
+    closeModal('addBondModal');
+    await loadBonding(lc_id);
+  }
+
+  // ── Load bonding table ──
+  async function loadBonding(lcId) {
+    if (!lcId) return;
+    const { data, error } = await _sb.from('bonding').select('*').eq('lc_id', lcId).order('bond_date');
+    const tbody = document.getElementById('bondingBody');
+    if (!tbody) return;
+    if (error || !data || !data.length) {
+      tbody.innerHTML = '<tr><td colspan="13" style="text-align:center;color:var(--gold);opacity:0.5;padding:32px;font-style:italic">No bonding records for this LC.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.map(r => `
+      <tr>
+        <td>${r.lc_no||'—'}</td>
+        <td><span class="tbl-pill ${r.bond_type==='BOND'?'pill-open':'pill-cfs'}">${r.bond_type||'—'}</span></td>
+        <td>${r.bond_date||'—'}</td>
+        <td>${r.be_no||'—'}</td>
+        <td class="num">${r.bags||'—'}</td>
+        <td class="num">${(r.mt||0).toFixed(2)}</td>
+        <td class="num">${r.rate_usd||'—'}</td>
+        <td class="num">${r.conv_rate||'—'}</td>
+        <td class="num">${fmt(r.inr_value||0)}</td>
+        <td class="num">${fmt(r.duty_bond||0)}</td>
+        <td class="num">${fmt(r.surcharge||0)}</td>
+        <td class="num" style="color:var(--red)">${fmt(r.igst||0)}</td>
+        <td class="num"><strong>${fmt(r.total_duty||0)}</strong></td>
+      </tr>`).join('');
+  }
+
+  // ══════════════════════════════════════════════
+  // PIVOT LOADS (Shipping / CFS / Guru) → Supabase
+  // ══════════════════════════════════════════════
+  async function loadPivot(lcId, type) {
+    const bodyMap = { SHIPPING: 'shippingPivotBody', CFS: 'cfsPivotBody', GURU: 'guruPivotBody' };
+    const tbody = document.getElementById(bodyMap[type]);
+    if (!tbody) return;
+    if (!lcId) {
+      tbody.innerHTML = '<tr><td colspan="2" style="text-align:center;color:var(--gold);opacity:0.5;padding:32px;font-style:italic">Select an LC to view pivot.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = '<tr><td colspan="2" style="text-align:center;padding:16px;color:var(--gold);font-style:italic">Loading…</td></tr>';
+    const { data, error } = await _sb.from('charges').select('mapped_category,amount_inr').eq('lc_id', lcId).eq('charge_type', type);
+    if (error || !data || !data.length) {
+      tbody.innerHTML = '<tr><td colspan="2" style="text-align:center;color:var(--gold);opacity:0.5;padding:32px;font-style:italic">No ' + type + ' charges for this LC.</td></tr>';
+      return;
+    }
+    // Aggregate by mapped_category
+    const agg = {};
+    data.forEach(r => { agg[r.mapped_category] = (agg[r.mapped_category]||0) + (r.amount_inr||0); });
+    const gross = Object.values(agg).reduce((s,v) => s+v, 0);
+    const gst   = Math.round(gross * 0.18);
+    let html = Object.entries(agg).map(([cat,amt]) =>
+      '<tr><td class="cat-cell">'+cat+'</td><td class="total-col">'+fmt(amt)+'</td></tr>'
+    ).join('');
+    html += '<tr class="gross-row"><td class="cat-cell"><strong>GROSS (Pre-GST)</strong></td><td class="total-col">'+fmt(gross)+'</td></tr>';
+    html += '<tr class="gst-row"><td class="cat-cell">GST @ 18%</td><td class="total-col">'+fmt(gst)+'</td></tr>';
+    html += '<tr class="grand-row"><td class="cat-cell"><strong>TOTAL (incl. GST)</strong></td><td class="total-col">'+fmt(gross+gst)+'</td></tr>';
+    tbody.innerHTML = html;
+  }
+
+  // Shim for old shipping onchange handler
+  function switchPivotLC(val, type) { loadPivot(val, type === 'ship' ? 'SHIPPING' : type === 'cfs' ? 'CFS' : 'GURU'); }
+  function switchCostLC(val) { loadCostBreakdown(val); }
+
+  // ══════════════════════════════════════════════
+  // DATASHEET → Supabase
+  // ══════════════════════════════════════════════
+  async function loadDatasheet() {
+    const lcId = document.getElementById('dsFilterLC')?.value || '';
+    const type = document.getElementById('dsFilterType')?.value || '';
+    let query = _sb.from('charges').select('*,lc_master(lc_no)').order('bill_date', { ascending: false });
+    if (lcId) query = query.eq('lc_id', lcId);
+    if (type && type !== 'All Types') query = query.eq('charge_type', type);
+    const { data, error } = await query;
+    const tbody = document.getElementById('datasheetBody');
+    if (!tbody) return;
+    if (error || !data || !data.length) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--gold);opacity:0.5;padding:32px;font-style:italic">No charge entries found.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.map(r => {
+      const isMapped = r.mapped_category && !r.mapped_category.startsWith('\u26A0');
+      return '<tr>' +
+        '<td><strong>'+(r.lc_master?.lc_no||'—')+'</strong></td>' +
+        '<td><span class="tbl-pill pill-'+((r.charge_type||'SHIP').toLowerCase().substring(0,4))+'">'+r.charge_type+'</span></td>' +
+        '<td>'+(r.bill_no||'—')+'</td>' +
+        '<td>'+(r.bill_date||'—')+'</td>' +
+        '<td>'+(r.particular_raw||'—')+'</td>' +
+        '<td style="color:'+(isMapped?'var(--green)':'var(--red)')+'">'+(r.mapped_category||'UNMAPPED')+'</td>' +
+        '<td class="num">'+fmt(r.amount_inr||0)+'</td>' +
+        '<td style="text-align:center">'+(isMapped?'<span style="color:var(--green)">✓</span>':'<span style="color:var(--red)">✗</span>')+'</td>' +
+        '</tr>';
+    }).join('');
+  }
+
+  function filterDatasheet() { loadDatasheet(); }
+
+  // ══════════════════════════════════════════════
+  // COST BREAKDOWN → Supabase
+  // ══════════════════════════════════════════════
+  async function loadCostBreakdown(lcId) {
+    if (!lcId) return;
+    document.getElementById('costBreakdownTitle').textContent = 'COST BREAKDOWN — LOADING…';
+    const [{ data: lc }, { data: charges }, { data: wh }, { data: bonds }] = await Promise.all([
+      _sb.from('lc_master').select('*').eq('id', lcId).single(),
+      _sb.from('charges').select('*').eq('lc_id', lcId),
+      _sb.from('warehouse').select('*').eq('lc_id', lcId),
+      _sb.from('bonding').select('*').eq('lc_id', lcId)
+    ]);
+    if (!lc) { document.getElementById('costBreakdownTitle').textContent = 'COST BREAKDOWN — NOT FOUND'; return; }
+    document.getElementById('costBreakdownTitle').textContent = 'COST BREAKDOWN — ' + lc.lc_no;
+    const mt = lc.qty_mt || 1;
+    // KPIs
+    document.getElementById('costKpiUSD').textContent = fmtUSD((lc.qty_mt||0)*(lc.rate_usd||0));
+    document.getElementById('costKpiOpen').textContent = lc.open_rate||'—';
+    document.getElementById('costKpiSettle').textContent = lc.settle_rate||'—';
+    // Material cost
+    const matCost = (lc.qty_mt||0) * (lc.rate_usd||0) * (lc.settle_rate||84.15);
+    // Bank charges (using recalcBank defaults but with LC values)
+    const days = lc.credit_days || 90;
+    const bankRate = 1;
+    const bankComm = (120 + days) * (lc.qty_mt||0) * (lc.rate_usd||0) / 360 * (lc.settle_rate||84.15) * (bankRate / 100);
+    const swift = 2000;
+    const cgst  = (bankComm + swift) * 0.09;
+    const sgst  = (bankComm + swift) * 0.09;
+    const usance = (lc.qty_mt||0) * (lc.rate_usd||0) * days / 360 * ((lc.credit_rate||4.8) / 100) * (lc.settle_rate||84.15);
+    // Charges by type
+    const byType = (type) => (charges||[]).filter(c=>c.charge_type===type).reduce((s,c)=>s+(c.amount_inr||0),0);
+    const ship = byType('SHIPPING'), cfsAmt = byType('CFS'), guruAmt = byType('GURU');
+    const whTotal = (wh||[]).reduce((s,r)=>s+(r.subtotal||0),0);
+    const whIgst  = (wh||[]).reduce((s,r)=>s+(r.igst||0),0);
+    const dutyBond = (bonds||[]).reduce((s,r)=>s+(r.duty_bond||0),0);
+    const surcharge = (bonds||[]).reduce((s,r)=>s+(r.surcharge||0),0);
+    const dutyIgst  = (bonds||[]).reduce((s,r)=>s+(r.igst||0),0);
+    const grand = matCost + bankComm + swift + cgst + sgst + usance + ship + ship*0.18 + cfsAmt + cfsAmt*0.18 + guruAmt + guruAmt*0.18 + whTotal + whIgst + dutyBond + surcharge + dutyIgst;
+    const perMT = grand / mt;
+    document.getElementById('costKpiPerMT').textContent = fmt(perMT);
+    // Render table
+    const p = v => fmt(v) + ' / ' + fmt(v/mt) + ' MT';
+    document.getElementById('costBreakdownTable').innerHTML = '<table class="cost-table">' + [
+      '<tr class="section-header"><td colspan="3">A. MATERIAL COST</td></tr>',
+      '<tr><td>LC Value (USD \xD7 Settlement Rate)</td><td class="num">'+fmt(matCost)+'</td><td class="num">'+fmt(matCost/mt)+'/MT</td></tr>',
+      '<tr class="section-header"><td colspan="3">B. BANK CHARGES</td></tr>',
+      '<tr><td>Bank Commission</td><td class="num">'+fmt(bankComm)+'</td><td class="num">'+fmt(bankComm/mt)+'/MT</td></tr>',
+      '<tr><td>SWIFT + CGST + SGST</td><td class="num">'+fmt(swift+cgst+sgst)+'</td><td class="num">'+fmt((swift+cgst+sgst)/mt)+'/MT</td></tr>',
+      '<tr class="section-header"><td colspan="3">C. SUPPLIER CREDIT INTEREST</td></tr>',
+      '<tr><td>Usance Interest</td><td class="num">'+fmt(usance)+'</td><td class="num">'+fmt(usance/mt)+'/MT</td></tr>',
+      '<tr class="section-header"><td colspan="3">D. SHIPPING CHARGES</td></tr>',
+      '<tr><td>Gross Shipping (pre-GST)</td><td class="num">'+fmt(ship)+'</td><td class="num">'+fmt(ship/mt)+'/MT</td></tr>',
+      '<tr><td>GST @ 18%</td><td class="num">'+fmt(ship*0.18)+'</td><td class="num">'+fmt(ship*0.18/mt)+'/MT</td></tr>',
+      '<tr class="section-header"><td colspan="3">E. CFS CHARGES</td></tr>',
+      '<tr><td>Gross CFS (pre-GST)</td><td class="num">'+fmt(cfsAmt)+'</td><td class="num">'+fmt(cfsAmt/mt)+'/MT</td></tr>',
+      '<tr><td>GST @ 18%</td><td class="num">'+fmt(cfsAmt*0.18)+'</td><td class="num">'+fmt(cfsAmt*0.18/mt)+'/MT</td></tr>',
+      '<tr class="section-header"><td colspan="3">F. GURU (CHA) CHARGES</td></tr>',
+      '<tr><td>Gross Guru (pre-GST)</td><td class="num">'+fmt(guruAmt)+'</td><td class="num">'+fmt(guruAmt/mt)+'/MT</td></tr>',
+      '<tr><td>GST @ 18%</td><td class="num">'+fmt(guruAmt*0.18)+'</td><td class="num">'+fmt(guruAmt*0.18/mt)+'/MT</td></tr>',
+      '<tr class="section-header"><td colspan="3">G. WAREHOUSE</td></tr>',
+      '<tr><td>Warehouse + Insurance</td><td class="num">'+fmt(whTotal)+'</td><td class="num">'+fmt(whTotal/mt)+'/MT</td></tr>',
+      '<tr><td>IGST @ 18%</td><td class="num">'+fmt(whIgst)+'</td><td class="num">'+fmt(whIgst/mt)+'/MT</td></tr>',
+      '<tr class="section-header"><td colspan="3">H. CUSTOMS DUTY</td></tr>',
+      '<tr><td>Duty Bond @ 7.5%</td><td class="num">'+fmt(dutyBond)+'</td><td class="num">'+fmt(dutyBond/mt)+'/MT</td></tr>',
+      '<tr><td>Surcharge @ 10%</td><td class="num">'+fmt(surcharge)+'</td><td class="num">'+fmt(surcharge/mt)+'/MT</td></tr>',
+      '<tr><td>IGST @ 18%</td><td class="num">'+fmt(dutyIgst)+'</td><td class="num">'+fmt(dutyIgst/mt)+'/MT</td></tr>',
+      '<tr class="grand-total"><td><strong>GRAND TOTAL LANDED COST</strong></td><td><strong>'+fmt(grand)+'</strong></td><td><strong>'+fmt(perMT)+'/MT</strong></td></tr>',
+    ].join('') + '</table>';
+  }
+
+  // ══════════════════════════════════════════════
+  // MAP SHEET FUNCTIONS → Supabase
+  // ══════════════════════════════════════════════
+  // Add MAP modal inputs need IDs — grab by placeholder
+  function getMapModalVals() {
+    const modal = document.getElementById('addMapModal');
+    const stdName = modal.querySelector('input[placeholder*="DTHC"]')?.value?.trim();
+    const type    = modal.querySelector('select')?.value;
+    const keywords = modal.querySelector('textarea')?.value?.trim();
+    return { stdName, type, keywords };
+  }
+
+  async function saveMapping() {
+    if (!requireAdmin('save mappings')) return;
+    const { stdName, type, keywords } = getMapModalVals();
+    if (!stdName || !keywords) { showToast('Standard name and keywords are required.', 'err'); return; }
+    const keyArr = keywords.split(',').map(k => k.trim().toUpperCase()).filter(Boolean);
+    // Upsert into Supabase keyword_map table
+    const { error } = await _sb.from('keyword_map').upsert({
+      std_name: stdName, charge_type: type, keywords: keyArr
+    }, { onConflict: 'std_name' });
+    if (error) { showToast('Error: ' + error.message, 'err'); return; }
+    // Also add to in-memory keywordMap for immediate use
+    const existing = keywordMap.findIndex(m => m.std === stdName);
+    if (existing >= 0) { keywordMap[existing].keys = keyArr; }
+    else { keywordMap.push({ keys: keyArr, std: stdName, type }); }
+    // Add row to table
+    const tbody = document.querySelector('#mapTable tbody');
+    if (tbody) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = '<td><strong>'+stdName+'</strong></td>' +
+        '<td><span class="tbl-pill pill-'+type.toLowerCase().substring(0,4)+'">'+type.substring(0,4)+'</span></td>' +
+        '<td>'+keyArr.map(k=>'<span class="keyword-tag">'+k+'</span>').join('')+'</td>' +
+        '<td><button class="btn btn-outline btn-sm admin-only edit-btn" onclick="editMapping(this)">Edit</button></td>';
+      tbody.appendChild(tr);
+    }
+    showToast('✅ Mapping saved!', 'ok');
+    closeModal('addMapModal');
+    document.getElementById('addMapModal').querySelectorAll('input,textarea').forEach(i => i.value = '');
+  }
+
+  async function loadKeywordMap() {
+    const { data } = await _sb.from('keyword_map').select('*');
+    if (!data || !data.length) return;
+    data.forEach(row => {
+      const existing = keywordMap.findIndex(m => m.std === row.std_name);
+      if (existing >= 0) { keywordMap[existing].keys = row.keywords || []; }
+      else { keywordMap.push({ keys: row.keywords || [], std: row.std_name, type: row.charge_type }); }
+    });
+  }
+
+  function editMapping(btn) {
+    const row = btn.closest('tr');
+    const stdName = row.cells[0].textContent.trim();
+    const type    = row.cells[1].textContent.trim();
+    const tags    = row.cells[2].querySelectorAll('.keyword-tag');
+    const keywords = Array.from(tags).map(t => t.textContent).join(', ');
+    const modal = document.getElementById('addMapModal');
+    modal.querySelector('input[placeholder*="DTHC"]').value = stdName;
+    modal.querySelector('select').value = type === 'SHIP' ? 'SHIPPING' : type;
+    modal.querySelector('textarea').value = keywords;
+    modal.querySelector('.modal-title').textContent = 'EDIT MAPPING';
+    openModal('addMapModal');
+  }
+
+  // ── MAP filter ──
   function filterMap() {
     const q = document.getElementById('mapSearch').value.toUpperCase();
     const type = document.getElementById('mapFilterType').value;
+    const TYPE_ABBR = { SHIPPING: 'SHIP', CFS: 'CFS', GURU: 'GURU' };
     document.querySelectorAll('#mapTable tbody tr').forEach(row => {
       const txt = row.innerText.toUpperCase();
       const matchQ = !q || txt.includes(q);
-      const matchT = type === 'All Types' || txt.includes(type.toUpperCase());
+      let matchT = type === 'All Types';
+      if (!matchT) {
+        const abbr = TYPE_ABBR[type] || type;
+        matchT = txt.includes(abbr) || txt.includes(type.toUpperCase());
+      }
       row.style.display = matchQ && matchT ? '' : 'none';
     });
   }
 
-  function switchPivotLC(val, type) { /* Connect Supabase to re-render pivot for selected LC */ }
-  function switchCostLC(val) { /* Connect Supabase to load cost breakdown per LC */ }
+  // ══════════════════════════════════════════════
+  // REPORT → Supabase + Export
+  // ══════════════════════════════════════════════
+  async function loadReport() {
+    const { data: lcs } = await _sb.from('lc_master').select('*');
+    if (!lcs || !lcs.length) return;
+    const tbody = document.getElementById('reportTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:16px;color:var(--gold);font-style:italic">Loading…</td></tr>';
+    const rows = await Promise.all(lcs.map(async lc => {
+      const [{ data: charges }, { data: wh }, { data: bonds }] = await Promise.all([
+        _sb.from('charges').select('charge_type,amount_inr').eq('lc_id', lc.id),
+        _sb.from('warehouse').select('total').eq('lc_id', lc.id),
+        _sb.from('bonding').select('total_duty').eq('lc_id', lc.id)
+      ]);
+      const byType = t => (charges||[]).filter(c=>c.charge_type===t).reduce((s,c)=>s+(c.amount_inr||0),0);
+      const ship = byType('SHIPPING'), cfsAmt = byType('CFS'), guruAmt = byType('GURU');
+      const whAmt = (wh||[]).reduce((s,r)=>s+(r.total||0),0);
+      const dutyAmt = (bonds||[]).reduce((s,r)=>s+(r.total_duty||0),0);
+      const lcVal = (lc.qty_mt||0)*(lc.rate_usd||0)*(lc.settle_rate||84.15);
+      const bank  = lcVal * 0.012; // approx
+      const total = lcVal + ship + cfsAmt + guruAmt + whAmt + dutyAmt + bank;
+      const mt    = lc.qty_mt || 1;
+      return { lc, lcVal, ship, cfsAmt, guruAmt, whAmt, dutyAmt, bank, total, mt };
+    }));
+    tbody.innerHTML = rows.map(r => `
+      <tr>
+        <td><strong>${r.lc.lc_no}</strong></td>
+        <td class="num">${(r.mt).toFixed(1)}</td>
+        <td class="num">${fmt(r.lcVal)}</td>
+        <td class="num">${fmt(r.ship)}</td>
+        <td class="num">${fmt(r.cfsAmt)}</td>
+        <td class="num">${fmt(r.guruAmt)}</td>
+        <td class="num">${fmt(r.whAmt)}</td>
+        <td class="num">${fmt(r.dutyAmt)}</td>
+        <td class="num">${fmt(r.bank)}</td>
+        <td class="num"><strong>${fmt(r.total)}</strong></td>
+        <td class="num"><strong>${fmt(r.total/r.mt)}/MT</strong></td>
+      </tr>`).join('');
+  }
+
+  function exportReport(format) {
+    showToast('Export to ' + format.toUpperCase() + ': Connect your export library (SheetJS / jsPDF).', 'info');
+  }
+
+  // ══════════════════════════════════════════════
+  // SETTINGS SAVE
+  // ══════════════════════════════════════════════
+  async function saveSettings() {
+    if (!requireAdmin('change settings')) return;
+    const vals = {
+      gst_shipping:  document.getElementById('s_gst_shipping')?.value,
+      gst_warehouse: document.getElementById('s_igst_wh')?.value,
+      duty_bond_pct: document.getElementById('s_duty_bond')?.value,
+      bank_rate:     document.getElementById('s_bank_rate')?.value,
+      swift_fixed:   document.getElementById('s_swift')?.value,
+      usance_rate:   document.getElementById('s_usance_rate')?.value,
+      credit_days:   document.getElementById('s_credit_days')?.value,
+      bags_per_mt:   document.getElementById('s_bags_mt')?.value,
+    };
+    const { error } = await _sb.from('settings').upsert({ id: 1, ...vals });
+    if (error) { showToast('Error saving settings: ' + error.message, 'err'); return; }
+    showToast('\u2705 Settings saved!', 'ok');
+    closeModal('settingsModal');
+  }
+
+  // ══════════════════════════════════════════════
+  // NAV — showSection with scroll reset + lazy load
+  // ══════════════════════════════════════════════
+  function showSection(id, el) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    const sec = document.getElementById(id);
+    if (sec) sec.classList.add('active');
+    if (el) el.classList.add('active');
+    const main = document.getElementById('main');
+    if (main) main.scrollTop = 0;
+    // Lazy-load data for the activated section
+    if (id === 'datasheet') loadDatasheet();
+    if (id === 'report')    loadReport();
+  }
+
+  // ══════════════════════════════════════════════
+  // OPEN ADD ENTRY MODAL — guard missing LC
+  // ══════════════════════════════════════════════
+  function openAddEntryModal(type, lcSelectId) {
+    const lcSel = document.getElementById(lcSelectId);
+    const lcId  = lcSel?.value;
+    const lcTxt = lcSel?.options[lcSel.selectedIndex]?.text || '';
+    if (!lcId) { showToast('Please select an LC from the dropdown first.', 'err'); return; }
+    document.getElementById('ae_lc').value = lcTxt;
+    document.getElementById('ae_lc').dataset.lcId = lcId;
+    document.getElementById('ae_type').value = type;
+    const typeColors = { SHIPPING: '#1A2E5C', CFS: '#1A5C2A', GURU: '#8B1A1A' };
+    document.getElementById('ae_type').style.color = typeColors[type] || 'var(--ink)';
+    document.getElementById('addEntryModalTitle').textContent = 'ADD ' + type + ' ENTRY \u2014 ' + lcTxt;
+    document.getElementById('ae_entryRows').innerHTML = '';
+    document.getElementById('ae_savedWrap').style.display = 'none';
+    document.getElementById('ae_savedTbody').innerHTML = '';
+    aeEntryCount = 0; addAERow();
+    openModal('addEntryModal');
+  }
+
+  // ══════════════════════════════════════════════
+  // BOND MODAL — pre-fill LC display text
+  // ══════════════════════════════════════════════
+  function openBondModal() {
+    const sel = document.getElementById('bondingLC');
+    const lcId  = sel?.value;
+    const lcTxt = sel?.options[sel.selectedIndex]?.text || '';
+    if (!lcId) { showToast('Please select an LC first.', 'err'); return; }
+    document.getElementById('b_lc_display').value = lcTxt;
+    openModal('addBondModal');
+  }
+
+  // ══════════════════════════════════════════════
+  // POST-LOGIN INIT
+  // ══════════════════════════════════════════════
+  const _origApplySession = typeof applySession === 'function' ? applySession : null;
+
+  async function postLoginInit() {
+    await populateLCDropdowns();
+    await loadKeywordMap();
+    await loadDashboard();
+    renderDocs();
+  }
+
 
   function saveSettings() {
     if (!requireAdmin('change settings')) return;
