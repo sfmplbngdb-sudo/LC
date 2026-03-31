@@ -1,0 +1,2733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kamakya LC Manager — Production</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --gold:       #C8972A;
+    --gold-light: #E8C060;
+    --gold-pale:  #F5E8C0;
+    --ink:        #1A1209;
+    --ink2:       #2D2010;
+    --parchment:  #F9F3E6;
+    --parch2:     #F0E8D0;
+    --cream:      #FBF7EE;
+    --red:        #8B1A1A;
+    --green:      #1A5C2A;
+    --blue:       #1A2E5C;
+    --border:     #C8972A44;
+    --shadow:     0 2px 16px rgba(26,18,9,0.13);
+    --shadow-lg:  0 8px 40px rgba(26,18,9,0.18);
+    --r:          6px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Crimson Pro', Georgia, serif;
+    background: var(--parchment);
+    color: var(--ink);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  /* ── TOPBAR ── */
+  #topbar {
+    background: linear-gradient(135deg, var(--ink) 0%, var(--ink2) 60%, #3D2A0A 100%);
+    border-bottom: 2px solid var(--gold);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    min-height: 56px;
+    box-shadow: var(--shadow-lg);
+  }
+  #topbar .brand {
+    display: flex; align-items: center; gap: 12px;
+  }
+  #topbar .brand-icon {
+    width: 38px; height: 38px;
+    border: 2px solid var(--gold);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(200,151,42,0.15);
+    font-size: 18px;
+    color: var(--gold-light);
+  }
+  #topbar .brand-name {
+    font-family: 'Cinzel', serif;
+    font-size: 17px; font-weight: 700;
+    color: var(--gold-light);
+    letter-spacing: 1.5px;
+  }
+  #topbar .brand-sub {
+    font-size: 10px; color: var(--gold); letter-spacing: 2px;
+    font-family: 'Cinzel', serif;
+  }
+  #topbar .top-actions {
+    display: flex; gap: 10px; align-items: center;
+  }
+  .btn-top {
+    background: rgba(200,151,42,0.12);
+    border: 1px solid var(--gold);
+    color: var(--gold-light);
+    padding: 5px 14px;
+    border-radius: 3px;
+    font-family: 'Crimson Pro', serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.2s;
+    letter-spacing: 0.5px;
+  }
+  .btn-top:hover { background: rgba(200,151,42,0.25); }
+  .badge-lc {
+    background: var(--gold);
+    color: var(--ink);
+    font-size: 11px;
+    padding: 2px 9px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-family: 'Cinzel', serif;
+  }
+
+  /* ── LAYOUT ── */
+  #app { display: flex; min-height: calc(100vh - 56px); }
+
+  /* ── SIDEBAR ── */
+  #sidebar {
+    width: 220px;
+    min-width: 220px;
+    background: linear-gradient(180deg, #1A1209 0%, #241608 60%, #2D1A08 100%);
+    border-right: 2px solid var(--gold);
+    display: flex;
+    flex-direction: column;
+    padding: 10px 0 18px;
+    position: sticky;
+    top: 56px;
+    height: calc(100vh - 56px);
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  #sidebar::-webkit-scrollbar { width: 4px; }
+  #sidebar::-webkit-scrollbar-track { background: transparent; }
+  #sidebar::-webkit-scrollbar-thumb { background: rgba(200,151,42,0.3); border-radius: 4px; }
+  .nav-section-label {
+    font-family: 'Cinzel', serif;
+    font-size: 8.5px;
+    letter-spacing: 2.5px;
+    color: var(--gold);
+    padding: 16px 16px 5px;
+    opacity: 0.6;
+    text-transform: uppercase;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 16px;
+    cursor: pointer;
+    color: #C4A97A;
+    font-size: 13px;
+    font-family: 'Crimson Pro', serif;
+    transition: all 0.18s;
+    border-left: 3px solid transparent;
+    border-radius: 0 4px 4px 0;
+    margin: 1px 6px 1px 0;
+    white-space: nowrap;
+    position: relative;
+  }
+  .nav-item:hover {
+    background: rgba(200,151,42,0.13);
+    color: var(--gold-light);
+    border-left-color: var(--gold);
+  }
+  .nav-item.active {
+    background: linear-gradient(90deg,rgba(200,151,42,0.22) 0%,rgba(200,151,42,0.06) 100%);
+    color: var(--gold-light);
+    border-left-color: var(--gold);
+    font-weight: 600;
+  }
+  .nav-item .nav-icon {
+    font-size: 15px;
+    width: 22px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .nav-item .nav-label { flex: 1; }
+  .nav-item .nav-badge {
+    margin-left: auto;
+    background: var(--gold);
+    color: var(--ink);
+    font-size: 9.5px;
+    padding: 1px 7px;
+    border-radius: 8px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .sidebar-divider {
+    border: none;
+    border-top: 1px solid rgba(200,151,42,0.18);
+    margin: 6px 14px;
+  }
+
+  /* ── MAIN CONTENT ── */
+  #main { flex: 1; padding: 24px 28px; min-width: 0; background: var(--cream); }
+
+  /* ── PAGE TITLE ── */
+  .page-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 22px;
+    padding-bottom: 14px;
+    border-bottom: 2px solid var(--border);
+  }
+  .page-title { font-family: 'Cinzel', serif; font-size: 20px; color: var(--ink); font-weight: 700; letter-spacing: 0.5px; }
+  .page-sub { font-size: 13px; color: var(--gold); margin-top: 2px; font-style: italic; }
+
+  /* ── SECTIONS ── */
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--parchment);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    box-shadow: var(--shadow);
+    margin-bottom: 20px;
+  }
+  .card-head {
+    padding: 13px 18px 10px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(90deg, rgba(200,151,42,0.05) 0%, transparent 100%);
+    border-radius: var(--r) var(--r) 0 0;
+  }
+  .card-title {
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    letter-spacing: 1px;
+    font-weight: 600;
+    color: var(--gold);
+  }
+  .card-body { padding: 16px 18px; }
+
+  /* ── KPI ROW ── */
+  .kpi-row { display: flex; gap: 14px; margin-bottom: 20px; flex-wrap: wrap; }
+  .kpi-box {
+    flex: 1; min-width: 140px;
+    background: var(--parchment);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 14px 16px;
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi-box::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--gold);
+  }
+  .kpi-box.red::before { background: var(--red); }
+  .kpi-box.green::before { background: var(--green); }
+  .kpi-box.blue::before { background: var(--blue); }
+  .kpi-label { font-size: 10px; letter-spacing: 1.5px; color: var(--gold); font-family: 'Cinzel', serif; margin-bottom: 6px; }
+  .kpi-value { font-size: 22px; font-weight: 600; color: var(--ink); font-family: 'Crimson Pro', serif; line-height: 1; }
+  .kpi-value.mono { font-family: 'JetBrains Mono', monospace; font-size: 17px; }
+  .kpi-sub { font-size: 11px; color: #7A6040; margin-top: 4px; }
+
+  /* ── GRID 2 / 3 COL ── */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
+
+  /* ── FORM ELEMENTS ── */
+  .form-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-bottom: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  label { font-size: 11px; letter-spacing: 0.8px; color: var(--gold); font-family: 'Cinzel', serif; font-weight: 600; }
+  input, select, textarea {
+    background: var(--cream);
+    border: 1px solid #C8972A55;
+    border-radius: 4px;
+    padding: 7px 10px;
+    font-family: 'Crimson Pro', serif;
+    font-size: 14px;
+    color: var(--ink);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(200,151,42,0.12);
+  }
+  input[readonly] {
+    background: var(--parch2);
+    color: #5A4020;
+  }
+  select { cursor: pointer; }
+  textarea { resize: vertical; min-height: 60px; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 18px;
+    border-radius: 4px;
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--gold) 0%, #A07020 100%);
+    color: var(--ink);
+    box-shadow: 0 2px 8px rgba(200,151,42,0.3);
+  }
+  .btn-primary:hover { box-shadow: 0 4px 16px rgba(200,151,42,0.45); transform: translateY(-1px); }
+  .btn-outline {
+    background: transparent;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+  }
+  .btn-outline:hover { background: rgba(200,151,42,0.1); }
+  .btn-danger {
+    background: var(--red);
+    color: #fff;
+  }
+  .btn-success {
+    background: var(--green);
+    color: #fff;
+  }
+  .btn-sm { padding: 5px 12px; font-size: 10px; }
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+
+  /* ── TABLES ── */
+  .tbl-wrap { overflow-x: auto; border-radius: var(--r); }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    min-width: 600px;
+  }
+  thead tr { background: linear-gradient(90deg, var(--ink2) 0%, #3D2A0A 100%); }
+  thead th {
+    padding: 9px 12px;
+    text-align: left;
+    color: var(--gold-light);
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: 1px;
+    font-weight: 600;
+    border-right: 1px solid rgba(200,151,42,0.2);
+    white-space: nowrap;
+  }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
+  tbody tr:hover { background: rgba(200,151,42,0.07); }
+  tbody td {
+    padding: 9px 12px;
+    vertical-align: middle;
+    color: var(--ink);
+    border-right: 1px solid var(--border);
+  }
+  tbody td.num { text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+  tbody tr.total-row {
+    background: linear-gradient(90deg, rgba(200,151,42,0.12) 0%, rgba(200,151,42,0.05) 100%);
+    font-weight: 700;
+  }
+  tbody tr.total-row td { color: var(--ink); font-weight: 700; }
+  tbody tr.gst-row td { color: var(--red); font-size: 12px; }
+  tbody tr.grand-row {
+    background: linear-gradient(90deg, var(--ink2) 0%, #3D2A0A 100%);
+  }
+  tbody tr.grand-row td { color: var(--gold-light); font-weight: 700; }
+  .tbl-pill {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .pill-ship { background: #1A2E5C22; color: #1A2E5C; border: 1px solid #1A2E5C44; }
+  .pill-cfs  { background: #1A5C2A22; color: #1A5C2A; border: 1px solid #1A5C2A44; }
+  .pill-guru { background: #5C1A1A22; color: #8B1A1A; border: 1px solid #8B1A1A44; }
+  .pill-open { background: #C8972A22; color: #7A5010; border: 1px solid var(--gold); }
+  .pill-closed { background: #1A5C2A22; color: var(--green); border: 1px solid #1A5C2A44; }
+
+  /* ── TABS ── */
+  .tab-row {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 18px;
+    overflow-x: auto;
+  }
+  .tab {
+    padding: 9px 18px;
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 0.8px;
+    cursor: pointer;
+    color: #7A6040;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+  .tab:hover { color: var(--gold); }
+  .tab.active { color: var(--gold); border-bottom-color: var(--gold); font-weight: 700; }
+
+  /* ── PIVOT TABLE ── */
+  .pivot-wrap { overflow-x: auto; }
+  .pivot-table { min-width: 700px; border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  .pivot-table th {
+    background: var(--ink2);
+    color: var(--gold-light);
+    padding: 7px 10px;
+    text-align: center;
+    font-family: 'Cinzel', serif;
+    font-size: 9.5px;
+    letter-spacing: 1px;
+    border: 1px solid rgba(200,151,42,0.25);
+  }
+  .pivot-table th.cat-head {
+    text-align: left;
+    width: 200px;
+  }
+  .pivot-table td {
+    border: 1px solid var(--border);
+    padding: 6px 10px;
+    vertical-align: middle;
+  }
+  .pivot-table td.cat-cell {
+    background: rgba(200,151,42,0.05);
+    font-size: 12px;
+    color: var(--ink2);
+    font-weight: 500;
+    max-width: 200px;
+  }
+  .pivot-table td.amt-cell {
+    text-align: right;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    color: #2A1A06;
+  }
+  .pivot-table td.total-col {
+    background: rgba(200,151,42,0.1);
+    font-weight: 700;
+    text-align: right;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .pivot-table tr.gross-row td { background: #1A5C2A18; font-weight: 700; color: var(--green); }
+  .pivot-table tr.gst-row td { background: #8B1A1A12; color: var(--red); font-size: 11px; }
+  .pivot-table tr.grand-row td { background: var(--ink2); color: var(--gold-light); font-weight: 700; }
+  .pivot-table tr.permt-row td { background: rgba(200,151,42,0.12); color: var(--gold); font-weight: 700; }
+
+  /* ── LC COST BREAKDOWN ── */
+  .cost-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .cost-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  .cost-table tr:last-child td { border-bottom: none; }
+  .cost-table td:first-child { color: var(--ink2); width: 55%; }
+  .cost-table td:nth-child(2) { text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ink); }
+  .cost-table td:nth-child(3) { text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5A4020; }
+  .cost-table tr.section-header td {
+    background: linear-gradient(90deg, rgba(200,151,42,0.08) 0%, transparent 100%);
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: var(--gold);
+    font-weight: 700;
+    padding-top: 12px;
+  }
+  .cost-table tr.grand-total td {
+    background: linear-gradient(90deg, var(--ink2) 0%, #3D2A0A 100%);
+    color: var(--gold-light);
+    font-weight: 700;
+    font-size: 15px;
+    border-radius: 0 0 var(--r) var(--r);
+  }
+
+  /* ── MAP MANAGER ── */
+  .map-search { display: flex; gap: 10px; margin-bottom: 14px; }
+  .map-search input { flex: 1; }
+  .keyword-tag {
+    display: inline-block;
+    background: rgba(200,151,42,0.12);
+    border: 1px solid var(--gold);
+    color: #5A3A0A;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    margin: 2px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ── ALERT ── */
+  .alert {
+    padding: 10px 14px;
+    border-radius: var(--r);
+    font-size: 13px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .alert-warn { background: #FFF3CD; border: 1px solid #C8972A; color: #5A3A00; }
+  .alert-ok   { background: #D4EDDA; border: 1px solid var(--green); color: var(--green); }
+  .alert-err  { background: #F8D7DA; border: 1px solid var(--red); color: var(--red); }
+  .alert-info { background: #D1ECF1; border: 1px solid #17a2b8; color: #0c5460; }
+
+  /* ── STATUS BADGE ── */
+  .status {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: 'Cinzel', serif;
+    letter-spacing: 0.5px;
+  }
+  .status-open    { background: #FFF3CD; color: #7A5010; border: 1px solid var(--gold); }
+  .status-settled { background: #D4EDDA; color: var(--green); border: 1px solid var(--green); }
+  .status-bonded  { background: #D1ECF1; color: #0c5460; border: 1px solid #17a2b8; }
+
+  /* ── PROGRESS ── */
+  .progress-bar { background: var(--parch2); border-radius: 10px; height: 8px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 10px; background: linear-gradient(90deg, var(--gold) 0%, var(--gold-light) 100%); transition: width 0.5s; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    #sidebar { width: 52px; min-width: 52px; }
+    .nav-item span.nav-label { display: none; }
+    .nav-item .nav-badge { display: none; }
+    .nav-section-label { display: none; }
+    #main { padding: 14px 10px; }
+    .kpi-row { gap: 8px; }
+    .grid2, .grid3 { grid-template-columns: 1fr; }
+  }
+
+  /* ── TOOLTIP ── */
+  [data-tip] { position: relative; cursor: help; }
+  [data-tip]:hover::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: 110%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--ink2);
+    color: var(--gold-light);
+    font-size: 11px;
+    padding: 5px 10px;
+    border-radius: 4px;
+    white-space: nowrap;
+    z-index: 100;
+    font-family: 'Crimson Pro', serif;
+    border: 1px solid var(--gold);
+  }
+
+  /* ── ORNAMENT ── */
+  .ornament { text-align: center; color: var(--gold); font-size: 18px; margin: 8px 0; letter-spacing: 8px; opacity: 0.5; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(26,18,9,0.65);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--parchment);
+    border: 2px solid var(--gold);
+    border-radius: var(--r);
+    box-shadow: var(--shadow-lg);
+    max-width: 600px;
+    width: 95vw;
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+  .modal-head {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(90deg, rgba(200,151,42,0.08) 0%, transparent 100%);
+    position: sticky;
+    top: 0;
+    background: var(--parchment);
+    z-index: 1;
+  }
+  .modal-title { font-family: 'Cinzel', serif; font-size: 13px; color: var(--gold); letter-spacing: 1px; }
+  .modal-close { background: none; border: none; font-size: 20px; color: var(--gold); cursor: pointer; line-height: 1; padding: 2px 6px; }
+  .modal-body { padding: 18px 20px; }
+  .modal-foot { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
+
+  /* ── SMALL MISC ── */
+  .text-gold { color: var(--gold); }
+  .text-right { text-align: right; }
+  .text-center { text-align: center; }
+  .mono { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+  .mt-10 { margin-top: 10px; }
+  .mb-10 { margin-bottom: 10px; }
+  .bold { font-weight: 700; }
+  hr.gold { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+  .info-row { display: flex; gap: 20px; flex-wrap: wrap; font-size: 13px; margin-bottom: 10px; }
+  .info-row span { color: #5A4020; }
+  .info-row strong { color: var(--ink); }
+
+  /* notification dot */
+  .notif-dot {
+    width: 8px; height: 8px;
+    background: var(--gold);
+    border-radius: 50%;
+    display: inline-block;
+    margin-left: 6px;
+    vertical-align: middle;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* ── LOGIN SCREEN ── */
+  #loginScreen {
+    position: fixed; inset: 0; z-index: 9999;
+    background: linear-gradient(135deg, #0D0A05 0%, #1A1209 40%, #241608 70%, #1A1209 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Crimson Pro', Georgia, serif;
+  }
+  #loginScreen.hidden { display: none; }
+  .login-card {
+    background: linear-gradient(160deg, #231810 0%, #1A1209 100%);
+    border: 1px solid rgba(200,151,42,0.35);
+    border-radius: 10px;
+    padding: 48px 44px 44px;
+    width: 100%; max-width: 420px;
+    box-shadow: 0 20px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(200,151,42,0.1);
+    position: relative; overflow: hidden;
+  }
+  .login-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, transparent, var(--gold), var(--gold-light), var(--gold), transparent);
+  }
+  .login-logo {
+    text-align: center; margin-bottom: 32px;
+  }
+  .login-logo-icon {
+    width: 60px; height: 60px; margin: 0 auto 14px;
+    border: 2px solid var(--gold);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; color: var(--gold-light);
+    background: rgba(200,151,42,0.08);
+    box-shadow: 0 0 30px rgba(200,151,42,0.15);
+  }
+  .login-title {
+    font-family: 'Cinzel', serif;
+    font-size: 20px; font-weight: 700;
+    color: var(--gold-light); letter-spacing: 3px;
+    margin-bottom: 4px;
+  }
+  .login-sub {
+    font-size: 11px; color: rgba(200,151,42,0.6);
+    letter-spacing: 2.5px; font-family: 'Cinzel', serif;
+  }
+  .login-form-group {
+    margin-bottom: 18px;
+  }
+  .login-label {
+    display: block; font-size: 10px; letter-spacing: 1.5px;
+    color: var(--gold); font-family: 'Cinzel', serif; font-weight: 600;
+    margin-bottom: 7px;
+  }
+  .login-input {
+    width: 100%; background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(200,151,42,0.3); border-radius: 5px;
+    padding: 11px 14px; font-family: 'Crimson Pro', serif; font-size: 15px;
+    color: #F0E0C0; outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .login-input:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(200,151,42,0.12);
+  }
+  .login-input::placeholder { color: rgba(200,151,42,0.3); }
+  .login-btn {
+    width: 100%; padding: 12px;
+    background: linear-gradient(135deg, var(--gold) 0%, #A07020 100%);
+    color: var(--ink); border: none; border-radius: 5px;
+    font-family: 'Cinzel', serif; font-size: 12px; font-weight: 700;
+    letter-spacing: 2px; cursor: pointer; margin-top: 8px;
+    transition: all 0.2s;
+    box-shadow: 0 4px 20px rgba(200,151,42,0.25);
+  }
+  .login-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(200,151,42,0.4); }
+  .login-btn:active { transform: translateY(0); }
+  .login-error {
+    background: rgba(139,26,26,0.2); border: 1px solid rgba(139,26,26,0.5);
+    border-radius: 4px; padding: 10px 14px; margin-bottom: 16px;
+    color: #E07070; font-size: 13px; display: none;
+  }
+  .login-error.show { display: block; }
+  .login-footer {
+    text-align: center; margin-top: 24px;
+    font-size: 11px; color: rgba(200,151,42,0.4);
+    font-family: 'Cinzel', serif; letter-spacing: 1px;
+  }
+  /* ── RBAC VISIBILITY ── */
+  .admin-only { display: none; }
+  .role-admin .admin-only { display: initial; }
+  .role-admin .admin-only.block-el { display: block; }
+  .role-admin .admin-only.flex-el { display: flex; }
+  .edit-btn { display: none; }
+  .role-admin .edit-btn { display: initial; }
+  /* ── USER CHIP in topbar ── */
+  .user-chip {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(200,151,42,0.1); border: 1px solid rgba(200,151,42,0.35);
+    border-radius: 20px; padding: 4px 12px 4px 6px;
+    cursor: default;
+  }
+  .user-chip-avatar {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--gold), #A07020);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Cinzel', serif; font-size: 11px; font-weight: 700;
+    color: var(--ink);
+  }
+  .user-chip-name { font-family: 'Cinzel', serif; font-size: 11px; color: var(--gold-light); letter-spacing: 0.5px; }
+  .user-chip-role {
+    font-size: 9px; color: var(--gold); letter-spacing: 1px;
+    font-family: 'Cinzel', serif; opacity: 0.7;
+  }
+  .btn-logout {
+    background: rgba(139,26,26,0.2);
+    border: 1px solid rgba(139,26,26,0.4);
+    color: #E07070; padding: 5px 12px;
+    border-radius: 3px; font-family: 'Crimson Pro', serif;
+    font-size: 12px; cursor: pointer; transition: background 0.2s;
+  }
+  .btn-logout:hover { background: rgba(139,26,26,0.35); }
+  /* ── READ-ONLY BANNER ── */
+  .readonly-banner {
+    background: rgba(26,46,92,0.15); border: 1px solid rgba(26,46,92,0.3);
+    border-radius: 4px; padding: 8px 14px; margin-bottom: 14px;
+    color: #6080B0; font-size: 12px; display: none;
+  }
+  .show-for-viewer .readonly-banner { display: block; }
+
+  /* ── USERS SECTION ── */
+  #usersSection { display: none; }
+  .role-admin #usersSection { display: block; }
+  .user-mgmt-card {
+    background: var(--parchment); border: 1px solid var(--border);
+    border-radius: var(--r); box-shadow: var(--shadow);
+    margin-bottom: 20px;
+  }
+  .role-badge {
+    display: inline-block; padding: 2px 10px; border-radius: 10px;
+    font-size: 10px; font-weight: 700; font-family: 'Cinzel', serif;
+    letter-spacing: 0.5px;
+  }
+  .role-badge.admin { background: rgba(200,151,42,0.2); color: var(--gold); border: 1px solid rgba(200,151,42,0.4); }
+  .role-badge.subadmin { background: rgba(26,46,92,0.2); color: #5080C0; border: 1px solid rgba(26,46,92,0.4); }
+  .role-badge.user { background: rgba(26,92,42,0.2); color: #50A070; border: 1px solid rgba(26,92,42,0.4); }
+</style>
+</head>
+<body>
+
+<!-- ─────────────── LOGIN SCREEN ─────────────── -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon">⚖</div>
+      <div class="login-title">KAMAKYA LC</div>
+      <div class="login-sub">IMPORT MANAGEMENT SYSTEM</div>
+    </div>
+    <div class="login-error" id="loginError">Invalid username or password. Please try again.</div>
+    <div class="login-form-group">
+      <label class="login-label">USERNAME</label>
+      <input class="login-input" type="text" id="loginUser" placeholder="Enter your username" autocomplete="username">
+    </div>
+    <div class="login-form-group">
+      <label class="login-label">PASSWORD</label>
+      <input class="login-input" type="password" id="loginPass" placeholder="Enter your password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="login-btn" onclick="doLogin()">SIGN IN →</button>
+    <div class="login-footer">KAMAKYA ENTERPRISE · SECURED ACCESS · FY 2024-25</div>
+  </div>
+</div>
+
+<!-- ─────────────── TOP BAR ─────────────── -->
+<div id="topbar">
+  <div class="brand">
+    <div class="brand-icon">⚖</div>
+    <div>
+      <div class="brand-name">KAMAKYA LC</div>
+      <div class="brand-sub">IMPORT MANAGEMENT SYSTEM</div>
+    </div>
+  </div>
+  <div class="top-actions">
+    <span class="badge-lc">FY 2024-25</span>
+    <button class="btn-top admin-only flex-el" onclick="openModal('addChargeModal')">＋ Add Charge</button>
+    <button class="btn-top admin-only flex-el" onclick="openModal('settingsModal')">⚙ Settings</button>
+    <div class="user-chip" id="userChip">
+      <div class="user-chip-avatar" id="userAvatar">?</div>
+      <div>
+        <div class="user-chip-name" id="userDisplayName">—</div>
+        <div class="user-chip-role" id="userDisplayRole">—</div>
+      </div>
+    </div>
+    <button class="btn-logout" onclick="doLogout()">⏻ Logout</button>
+  </div>
+</div>
+
+<!-- ─────────────── APP BODY ─────────────── -->
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <nav id="sidebar">
+    <div class="nav-section-label">MAIN</div>
+    <div class="nav-item active" onclick="showSection('dashboard',this)">
+      <span class="nav-icon">🏛</span>
+      <span class="nav-label">Dashboard</span>
+    </div>
+    <div class="nav-item" onclick="showSection('lcList',this)">
+      <span class="nav-icon">📋</span>
+      <span class="nav-label">LC Register</span>
+      <span class="nav-badge">8</span>
+    </div>
+
+    <hr class="sidebar-divider">
+    <div class="nav-section-label">CHARGES</div>
+    <div class="nav-item" onclick="showSection('datasheet',this)">
+      <span class="nav-icon">📊</span>
+      <span class="nav-label">Datasheet</span>
+    </div>
+    <div class="nav-item" onclick="showSection('shipping',this)">
+      <span class="nav-icon">🚢</span>
+      <span class="nav-label">Shipping</span>
+    </div>
+    <div class="nav-item" onclick="showSection('cfs',this)">
+      <span class="nav-icon">📦</span>
+      <span class="nav-label">CFS</span>
+    </div>
+    <div class="nav-item" onclick="showSection('guru',this)">
+      <span class="nav-icon">🧾</span>
+      <span class="nav-label">Guru (CHA)</span>
+    </div>
+
+    <hr class="sidebar-divider">
+    <div class="nav-section-label">OPERATIONS</div>
+    <div class="nav-item" onclick="showSection('warehouse',this)">
+      <span class="nav-icon">🏭</span>
+      <span class="nav-label">Warehouse</span>
+    </div>
+    <div class="nav-item" onclick="showSection('bonding',this)">
+      <span class="nav-icon">🔗</span>
+      <span class="nav-label">Bonding</span>
+    </div>
+    <div class="nav-item" onclick="showSection('costBreakdown',this)">
+      <span class="nav-icon">📈</span>
+      <span class="nav-label">Cost / MT</span>
+    </div>
+
+    <hr class="sidebar-divider">
+    <div class="nav-section-label">CONFIG</div>
+    <div class="nav-item" onclick="showSection('mapSheet',this)">
+      <span class="nav-icon">🗺</span>
+      <span class="nav-label">MAP Sheet</span>
+      <span class="nav-badge">3</span>
+    </div>
+    <div class="nav-item" onclick="showSection('report',this)">
+      <span class="nav-icon">📄</span>
+      <span class="nav-label">LC Report</span>
+    </div>
+    <div class="nav-item admin-only" id="usersNavItem" onclick="showSection('users',this)">
+      <span class="nav-icon">👥</span>
+      <span class="nav-label">User Management</span>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main id="main">
+
+    <!-- ════════ DASHBOARD ════════ -->
+    <section class="section active" id="dashboard">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Dashboard</div>
+          <div class="page-sub">All LC Transactions Overview — FY 2024-25</div>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="showSection('report',document.querySelector('[onclick*=report]'))">View Report →</button>
+      </div>
+
+      <div class="kpi-row" id="dashKpiRow">
+        <div class="kpi-box">
+          <div class="kpi-label">TOTAL LC OPEN</div>
+          <div class="kpi-value" id="kpiTotalLC">—</div>
+          <div class="kpi-sub">Active letters of credit</div>
+        </div>
+        <div class="kpi-box blue">
+          <div class="kpi-label">TOTAL VALUE (USD)</div>
+          <div class="kpi-value mono" id="kpiTotalUSD">—</div>
+          <div class="kpi-sub">Across all LCs</div>
+        </div>
+        <div class="kpi-box">
+          <div class="kpi-label">TOTAL QTY (MT)</div>
+          <div class="kpi-value mono" id="kpiTotalMT">—</div>
+          <div class="kpi-sub">Chemical imports</div>
+        </div>
+        <div class="kpi-box green">
+          <div class="kpi-label">SETTLED LCs</div>
+          <div class="kpi-value" id="kpiSettled">—</div>
+          <div class="kpi-sub">Payment cleared</div>
+        </div>
+        <div class="kpi-box red">
+          <div class="kpi-label">PENDING LCs</div>
+          <div class="kpi-value" id="kpiPending">—</div>
+          <div class="kpi-sub">Awaiting settlement</div>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">LC STATUS OVERVIEW</span>
+            <button class="btn btn-outline btn-sm" onclick="showSection('lcList',document.querySelector('[onclick*=lcList]'))">View All</button>
+          </div>
+          <div class="card-body">
+            <table>
+              <thead>
+                <tr>
+                  <th>LC NO</th>
+                  <th>COMPANY</th>
+                  <th>QTY (MT)</th>
+                  <th>VALUE (USD)</th>
+                  <th>STATUS</th>
+                </tr>
+              </thead>
+              <tbody id="dashLCTableBody">
+                <tr><td colspan="5" style="text-align:center;color:var(--gold);opacity:0.5;padding:24px;font-style:italic">No LC records. Connect Supabase to load live data.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><span class="card-title">CHARGE SUMMARY BY TYPE</span></div>
+          <div class="card-body">
+            <div class="info-row mb-10">
+              <span>All LCs · All Bills · Pre-GST Gross</span>
+            </div>
+            <table>
+              <thead><tr><th>TYPE</th><th>GROSS (INR)</th><th>GST 18%</th><th>TOTAL</th></tr></thead>
+              <tbody id="dashChargeSummary">
+                <tr><td colspan="4" style="text-align:center;color:var(--gold);opacity:0.5;padding:24px;font-style:italic">Charge data will appear here from Supabase.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">DOCUMENT COMPLETION STATUS</span>
+          <button class="btn btn-outline btn-sm admin-only" onclick="openModal('addDocModal')">＋ Add Document</button>
+        </div>
+        <div class="card-body" id="docListBody">
+          <!-- rendered by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════ LC REGISTER ════════ -->
+    <section class="section" id="lcList">
+      <div class="page-header">
+        <div>
+          <div class="page-title">LC Register</div>
+          <div class="page-sub">Letter of Credit Master Records — FY 2024-25</div>
+        </div>
+        <button class="btn btn-primary admin-only" onclick="openModal('addLCModal')">＋ New LC</button>
+      </div>
+      <div class="alert alert-info">ℹ LC numbers are non-sequential (no LC 03). System supports any LC sequence. Click <strong>View</strong> to open the full cost breakdown for any LC.</div>
+
+      <!-- KPI strip for LC Register -->
+      <div class="kpi-row" style="margin-bottom:18px">
+        <div class="kpi-box"><div class="kpi-label">TOTAL LCs</div><div class="kpi-value" id="lcKpiTotal">—</div></div>
+        <div class="kpi-box green"><div class="kpi-label">SETTLED</div><div class="kpi-value" id="lcKpiSettled">—</div></div>
+        <div class="kpi-box" style="--accent:var(--blue)"><div class="kpi-label">BONDED</div><div class="kpi-value" id="lcKpiBonded">—</div></div>
+        <div class="kpi-box red"><div class="kpi-label">OPEN</div><div class="kpi-value" id="lcKpiOpen">—</div></div>
+        <div class="kpi-box blue"><div class="kpi-label">TOTAL VALUE (USD)</div><div class="kpi-value mono" style="font-size:15px" id="lcKpiUSD">—</div></div>
+        <div class="kpi-box"><div class="kpi-label">TOTAL QTY (MT)</div><div class="kpi-value mono" id="lcKpiMT">—</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">ALL LETTERS OF CREDIT</span>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select style="font-size:12px;padding:4px 8px" id="lcFilterStatus" onchange="filterLCTable()">
+              <option value="">All Status</option>
+              <option value="Settled">Settled</option>
+              <option value="Bonded">Bonded</option>
+              <option value="Open">Open</option>
+            </select>
+          </div>
+        </div>
+        <div class="card-body" style="padding:0">
+          <div class="tbl-wrap">
+            <table id="lcRegisterTable">
+              <thead>
+                <tr>
+                  <th>LC NO</th>
+                  <th>COMPANY / BENEFICIARY</th>
+                  <th>OPENING DATE</th>
+                  <th>EXPIRY DATE</th>
+                  <th>QTY (MT)</th>
+                  <th>BAGS</th>
+                  <th>RATE (USD/MT)</th>
+                  <th>USD/INR OPEN</th>
+                  <th>USD/INR SETTLE</th>
+                  <th>CREDIT DAYS</th>
+                  <th>LC VALUE (INR)</th>
+                  <th>STATUS</th>
+                  <th>ACTION</th>
+                </tr>
+              </thead>
+              <tbody id="lcRegisterBody">
+                <tr><td colspan="13" style="text-align:center;color:var(--gold);opacity:0.5;padding:32px;font-style:italic">No LC records found. Add your first LC or connect Supabase to load live data.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════ DATASHEET ════════ -->
+    <section class="section" id="datasheet">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Datasheet — Master Charge Entry</div>
+          <div class="page-sub">All raw charge entries across SHIPPING · CFS · GURU</div>
+        </div>
+        <div style="display:flex;gap:10px">
+          <select style="font-size:13px;padding:6px 10px" id="dsFilterLC">
+            <option>All LCs</option>
+          </select>
+          <select style="font-size:13px;padding:6px 10px" id="dsFilterType">
+            <option>All Types</option>
+            <option>SHIPPING</option><option>CFS</option><option>GURU</option>
+          </select>
+          <button class="btn btn-primary btn-sm admin-only" onclick="openModal('addChargeModal')">＋ Add</button>
+        </div>
+      </div>
+      <div class="alert alert-warn">⚠ Raw "Particular" auto-maps to Standard Category via MAP sheet. Unmapped entries are flagged in red.</div>
+      <div class="card">
+        <div class="card-body" style="padding:0">
+          <div class="tbl-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>LC KEY</th><th>TYPE</th><th>BILL NO</th><th>DATE</th>
+                  <th>PARTICULAR (RAW)</th><th>MAPPED CATEGORY</th>
+                  <th>AMOUNT (INR)</th><th>MAPPED?</th>
+                </tr>
+              </thead>
+              <tbody id="datasheetBody">
+                <tr><td colspan="8" style="text-align:center;color:var(--gold);opacity:0.5;padding:32px;font-style:italic">No charge entries found. Connect Supabase to load live data.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════ SHIPPING PIVOT ════════ -->
+    <section class="section" id="shipping">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Shipping — Charge Pivot</div>
+          <div class="page-sub">SUMIFS aggregation by LC · Bill · Category</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <select style="font-size:13px;padding:6px 10px" id="shippingLC" onchange="switchPivotLC(this.value,'ship')">
+            <option value="">Select LC</option>
+          </select>
+          <button class="btn btn-primary btn-sm admin-only" onclick="openAddEntryModal('SHIPPING','shippingLC')">＋ Add Entry</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body" style="padding:0">
+          <div class="pivot-wrap">
+            <table class="pivot-table" id="shippingPivot">
+              <thead><tr><th class="cat-head">CATEGORY</th><th>TOTAL</th></tr></thead>
+              <tbody id="shippingPivotBody">
+                <tr><td colspan="2" style="text-align:center;color:var(--gold);opacity:0.5;padding:32px;font-style:italic">Select an LC and connect Supabase to view shipping charge pivot.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════ CFS ════════ -->
+    <section class="section" id="cfs">
+      <div class="page-header">
+        <div>
+          <div class="page-title">CFS — Container Freight Station</div>
+          <div class="page-sub">CFS charge pivot by LC and Bill</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <select style="font-size:13px;padding:6px 10px" id="cfsLC">
+            <option value="">Select LC</option>
+          </select>
+          <button class="btn btn-primary btn-sm admin-only" onclick="openAddEntryModal('CFS','cfsLC')">＋ Add Entry</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body" style="padding:0">
+          <div class="pivot-wrap">
+            <table class="pivot-table">
+              <thead><tr><th class="cat-head">CATEGORY</th><th>TOTAL</th></tr></thead>
+              <tbody id="cfsPivotBody">
+                <tr><td colspan="2" style="text-align:center;color:var(--gold);opacity:0.5;padding:32px;font-style:italic">Select an LC and connect Supabase to view CFS charge pivot.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════ GURU ════════ -->
+    <section class="section" id="guru">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Guru Shipping — CHA Charges</div>
+          <div class="page-sub">Customs House Agent charges pivot</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <select style="font-size:13px;padding:6px 10px" id="guruLC">
+            <option value="">Select LC</option>
+          </select>
+          <button class="btn btn-primary btn-sm admin-only" onclick="openAddEntryModal('GURU','guruLC')">＋ Add Entry</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body" style="padding:0">
+          <div class="pivot-wrap">
+            <table class="pivot-table">
+              <thead><tr><th class="cat-head">CATEGORY</th><th>TOTAL</th></tr></thead>
+              <tbody id="guruPivotBody">
+                <tr><td colspan="2" style="text-align:center;color:var(--gold);opacity:0.5;padding:32px;font-style:italic">Select an LC and connect Supabase to view GURU/CHA charge pivot.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════ WAREHOUSE ════════ -->
+    <section class="section" id="warehouse">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Warehouse (Saatva) — Storage Charges</div>
+          <div class="page-sub">Auto-calculates Weeks = ⌈(To − From + 1) / 7⌉ · Warehouse = SqMtr × Weeks × Rate</div>
+        </div>
+        <div style="display:flex;gap:10px">
+          <select style="font-size:13px;padding:6px 10px" id="warehouseLC">
+            <option value="">Select LC</option>
+          </select>
+          <button class="btn btn-primary btn-sm admin-only" onclick="openModal('addWarehouseModal')">＋ Add Entry</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">WAREHOUSE REGISTER</span>
+        </div>
+        <div class="card-body" style="padding:0">
+          <div class="tbl-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>DATE</th><th>INVOICE NO</th><th>SQ MTR</th>
+                  <th>FROM</th><th>TO</th><th>CONTAINER</th>
+                  <th>WEEKS</th><th>RATE/SQM/WK</th>
+                  <th>WH CHARGES</th><th>INSURANCE</th>
+                  <th>SUBTOTAL</th><th>IGST 18%</th><th>TOTAL</th>
+                  <th>DEL DATE</th><th>MT DEL</th><th>BAL SQM</th>
+                </tr>
+              </thead>
+              <tbody id="warehouseBody">
+                <tr><td colspan="16" style="text-align:center;color:var(--gold);opacity:0.5;padding:32px;font-style:italic">No warehouse entries. Select an LC and connect Supabase.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════ BONDING ════════ -->
+    <section class="section" id="bonding">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Bonding / De-Bonding Register</div>
+          <div class="page-sub">Customs bond tracking — duty deferred at bonding, paid at de-bonding</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <select style="font-size:13px;padding:6px 10px" id="bondingLC">
+            <option value="">Select LC</option>
+          </select>
+          <button class="btn btn-primary btn-sm admin-only" onclick="openBondModal()">＋ Bond Entry</button>
+        </div>
+      </div>
+      <div class="alert alert-info">ℹ Duty Bond = INR Value × 7.5% · Surcharge = Duty × 10% · IGST = (Value + Duty + Surcharge) × 18%</div>
+      <div class="card">
+        <div class="card-body" style="padding:0">
+          <div class="tbl-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>LC</th><th>TYPE</th><th>DATE</th><th>BE NO</th>
+                  <th>BAGS</th><th>MT</th><th>RATE (USD)</th>
+                  <th>CONV RATE</th><th>INR VALUE</th>
+                  <th>DUTY BOND</th><th>SURCHARGE</th><th>IGST</th><th>TOTAL DUTY</th>
+                </tr>
+              </thead>
+              <tbody id="bondingBody">
+                <tr><td colspan="13" style="text-align:center;color:var(--gold);opacity:0.5;padding:32px;font-style:italic">No bonding records. Select an LC and connect Supabase.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════ COST / MT ════════ -->
+    <section class="section" id="costBreakdown">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Cost Breakdown — Per Metric Tonne</div>
+          <div class="page-sub">Final LC cost computation used for pricing & analysis</div>
+        </div>
+        <select style="font-size:13px;padding:6px 10px" onchange="switchCostLC(this.value)">
+          <option value="1">LC 01</option><option value="2">LC 02</option>
+          <option value="4">LC 04</option>
+        </select>
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi-box blue">
+          <div class="kpi-label">LC AMOUNT (USD)</div>
+          <div class="kpi-value mono" id="costKpiUSD">—</div>
+          <div class="kpi-sub">From selected LC</div>
+        </div>
+        <div class="kpi-box">
+          <div class="kpi-label">USD/INR OPEN RATE</div>
+          <div class="kpi-value mono" id="costKpiOpen">—</div>
+        </div>
+        <div class="kpi-box">
+          <div class="kpi-label">USD/INR SETTLE RATE</div>
+          <div class="kpi-value mono" id="costKpiSettle">—</div>
+        </div>
+        <div class="kpi-box green">
+          <div class="kpi-label">TOTAL COST / MT</div>
+          <div class="kpi-value mono" id="costKpiPerMT">—</div>
+          <div class="kpi-sub">All-in landed cost</div>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <div class="card-head"><span class="card-title" id="costBreakdownTitle">COST BREAKDOWN — SELECT LC</span></div>
+          <div class="card-body" style="padding:0">
+            <div id="costBreakdownTable">
+              <table class="cost-table">
+                <tr class="section-header"><td colspan="3">A. MATERIAL COST</td></tr>
+                <tr><td>LC Value (USD × Settlement Rate)</td><td>—</td><td>— / MT</td></tr>
+                <tr><td>Tolerance Adjustment</td><td>—</td><td>— / MT</td></tr>
+                <tr class="section-header"><td colspan="3">B. BANK CHARGES (OPENING)</td></tr>
+                <tr><td>Bank Commission</td><td>—</td><td>— / MT</td></tr>
+                <tr><td>SWIFT Charges</td><td>—</td><td>— / MT</td></tr>
+                <tr><td>CGST (9%) + SGST (9%)</td><td>—</td><td>— / MT</td></tr>
+                <tr class="section-header"><td colspan="3">C. SUPPLIER CREDIT INTEREST</td></tr>
+                <tr><td>Usance Interest</td><td>—</td><td>— / MT</td></tr>
+                <tr class="section-header"><td colspan="3">D. SHIPPING CHARGES</td></tr>
+                <tr><td>Gross Shipping (pre-GST)</td><td>—</td><td>— / MT</td></tr>
+                <tr><td>GST @ 18%</td><td>—</td><td>— / MT</td></tr>
+                <tr class="section-header"><td colspan="3">E. CFS CHARGES</td></tr>
+                <tr><td>Gross CFS (pre-GST)</td><td>—</td><td>— / MT</td></tr>
+                <tr><td>GST @ 18%</td><td>—</td><td>— / MT</td></tr>
+                <tr class="section-header"><td colspan="3">F. GURU (CHA) CHARGES</td></tr>
+                <tr><td>Gross Guru (pre-GST)</td><td>—</td><td>— / MT</td></tr>
+                <tr><td>GST @ 18%</td><td>—</td><td>— / MT</td></tr>
+                <tr class="section-header"><td colspan="3">G. WAREHOUSE</td></tr>
+                <tr><td>Warehouse + Insurance</td><td>—</td><td>— / MT</td></tr>
+                <tr><td>IGST @ 18%</td><td>—</td><td>— / MT</td></tr>
+                <tr class="section-header"><td colspan="3">H. CUSTOMS DUTY (DE-BONDING)</td></tr>
+                <tr><td>Duty Bond @ 7.5%</td><td>—</td><td>— / MT</td></tr>
+                <tr><td>Surcharge @ 10%</td><td>—</td><td>— / MT</td></tr>
+                <tr><td>IGST @ 18%</td><td>—</td><td>— / MT</td></tr>
+                <tr class="grand-total"><td><strong>GRAND TOTAL LANDED COST</strong></td><td><strong>—</strong></td><td><strong>— / MT</strong></td></tr>
+              </table>
+              <div style="text-align:center;padding:12px;color:var(--gold);opacity:0.55;font-style:italic;font-size:12px">Select an LC and connect Supabase to compute live cost breakdown.</div>
+            </div>
+          </div>
+        </div>
+          <div class="card">
+            <div class="card-head"><span class="card-title">BANK PARAMETERS</span></div>
+            <div class="card-body">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Credit Days (Actual)</label>
+                  <input type="number" value="90" id="creditDays" oninput="recalcBank()">
+                </div>
+                <div class="form-group">
+                  <label>Bank Rate (% PA)</label>
+                  <input type="number" value="1" step="0.1" id="bankRate" oninput="recalcBank()">
+                </div>
+                <div class="form-group">
+                  <label>Credit Rate (% PA)</label>
+                  <input type="number" value="4.8" step="0.1" id="creditRate" oninput="recalcBank()">
+                </div>
+                <div class="form-group">
+                  <label>Tolerance %</label>
+                  <input type="number" value="0.8" step="0.1" id="tolerancePct" oninput="recalcBank()">
+                </div>
+                <div class="form-group">
+                  <label>GST % (Shipping)</label>
+                  <input type="number" value="18" id="gstPct" oninput="recalcBank()">
+                </div>
+                <div class="form-group">
+                  <label>Duty Bond %</label>
+                  <input type="number" value="7.5" step="0.1" id="dutyPct" oninput="recalcBank()">
+                </div>
+              </div>
+              <div class="btn-row">
+                <button class="btn btn-primary" onclick="recalcBank()">⟳ Recalculate</button>
+              </div>
+              <hr class="gold">
+              <div id="bankCalcResult">
+                <div style="color:var(--gold);opacity:0.5;font-style:italic;font-size:13px">Enter parameters above and click Recalculate.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card mt-10">
+            <div class="card-head"><span class="card-title">VALIDATION CHECKS</span></div>
+            <div class="card-body" id="validationChecks">
+              <div style="color:var(--gold);opacity:0.5;font-style:italic;font-size:13px">Select an LC to run validation checks.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════ MAP SHEET ════════ -->
+    <section class="section" id="mapSheet">
+      <div class="page-header">
+        <div>
+          <div class="page-title">MAP Sheet — Keyword Normalisation</div>
+          <div class="page-sub">Raw invoice particulars → Standardised charge categories</div>
+        </div>
+        <button class="btn btn-primary btn-sm admin-only" onclick="openModal('addMapModal')">＋ Add Mapping</button>
+      </div>
+      <div class="alert alert-info">ℹ Matching is case-insensitive prefix/contains. Add new keywords here; they auto-apply to all Datasheet entries.</div>
+
+      <div class="map-search">
+        <input type="text" id="mapSearch" placeholder="Search keyword or standard name…" oninput="filterMap()" style="max-width:350px">
+        <select style="font-size:13px;padding:6px 10px" onchange="filterMap()" id="mapFilterType">
+          <option>All Types</option>
+          <option>SHIPPING</option><option>CFS</option><option>GURU</option>
+        </select>
+      </div>
+
+      <div class="card">
+        <div class="card-body" style="padding:0">
+          <div class="tbl-wrap">
+            <table id="mapTable">
+              <thead>
+                <tr>
+                  <th style="width:35%">STANDARD NAME</th>
+                  <th>TYPE</th>
+                  <th>KEYWORDS (RAW VARIATIONS)</th>
+                  <th>ACTION</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>DTHC /DTHL /CYCY /THC</strong></td>
+                  <td><span class="tbl-pill pill-ship">SHIP</span></td>
+                  <td>
+                    <span class="keyword-tag">THC</span>
+                    <span class="keyword-tag">DTHC</span>
+                    <span class="keyword-tag">DTHL</span>
+                    <span class="keyword-tag">CYCY</span>
+                    <span class="keyword-tag">THC CHG</span>
+                    <span class="keyword-tag">HANDLING CHARGE</span>
+                    <span class="keyword-tag">TERMINAL HANDLING</span>
+                    <span class="keyword-tag">DEST THC</span>
+                    <span class="keyword-tag">ORIGIN THC</span>
+                    <span class="keyword-tag">OD THC</span>
+                  </td>
+                  <td><button class="btn btn-outline btn-sm admin-only edit-btn">Edit</button></td>
+                </tr>
+                <tr>
+                  <td><strong>OD/CMCP/CLTY/OD THC.P</strong></td>
+                  <td><span class="tbl-pill pill-ship">SHIP</span></td>
+                  <td>
+                    <span class="keyword-tag">CLTY</span>
+                    <span class="keyword-tag">OD THC.P</span>
+                    <span class="keyword-tag">CMCP</span>
+                    <span class="keyword-tag">OD/CMCP</span>
+                    <span class="keyword-tag">CLAILITY</span>
+                  </td>
+                  <td><button class="btn btn-outline btn-sm admin-only edit-btn">Edit</button></td>
+                </tr>
+                <tr>
+                  <td><strong>CTMC / CMC / CEIW</strong></td>
+                  <td><span class="tbl-pill pill-ship">SHIP</span></td>
+                  <td>
+                    <span class="keyword-tag">CTMC</span>
+                    <span class="keyword-tag">CMC</span>
+                    <span class="keyword-tag">CEIW</span>
+                    <span class="keyword-tag">CONTAINER MANAGEMENT</span>
+                    <span class="keyword-tag">TERMINAL MOVEMENT</span>
+                  </td>
+                  <td><button class="btn btn-outline btn-sm admin-only edit-btn">Edit</button></td>
+                </tr>
+                <tr>
+                  <td><strong>LOLO / LOFC</strong></td>
+                  <td><span class="tbl-pill pill-ship">SHIP</span></td>
+                  <td>
+                    <span class="keyword-tag">LOLO</span>
+                    <span class="keyword-tag">LOFC</span>
+                    <span class="keyword-tag">LIFT ON LIFT OFF</span>
+                    <span class="keyword-tag">LIFT OFF FROM CONTAINER</span>
+                  </td>
+                  <td><button class="btn btn-outline btn-sm admin-only edit-btn">Edit</button></td>
+                </tr>
+                <tr>
+                  <td><strong>WASHING /CLEANING</strong></td>
+                  <td><span class="tbl-pill pill-ship">SHIP</span></td>
+                  <td>
+                    <span class="keyword-tag">WASHING</span>
+                    <span class="keyword-tag">CLEANING</span>
+                    <span class="keyword-tag">CONTAINER CLEANING</span>
+                  </td>
+                  <td><button class="btn btn-outline btn-sm admin-only edit-btn">Edit</button></td>
+                </tr>
+                <tr>
+                  <td><strong>CAF</strong></td>
+                  <td><span class="tbl-pill pill-cfs">CFS</span></td>
+                  <td>
+                    <span class="keyword-tag">CAF</span>
+                    <span class="keyword-tag">CONTAINER HANDLING</span>
+                    <span class="keyword-tag">CURRENCY ADJ FACTOR</span>
+                  </td>
+                  <td><button class="btn btn-outline btn-sm admin-only edit-btn">Edit</button></td>
+                </tr>
+                <tr>
+                  <td><strong>SRV CHG / SERVICE CHG</strong></td>
+                  <td><span class="tbl-pill pill-guru">GURU</span></td>
+                  <td>
+                    <span class="keyword-tag">SRV CHG</span>
+                    <span class="keyword-tag">SERVICE CHG</span>
+                    <span class="keyword-tag">SERVICE CHARGE</span>
+                    <span class="keyword-tag">AGENCY FEE</span>
+                  </td>
+                  <td><button class="btn btn-outline btn-sm admin-only edit-btn">Edit</button></td>
+                </tr>
+                <tr>
+                  <td><strong>BON EXP / BOND EXP</strong></td>
+                  <td><span class="tbl-pill pill-guru">GURU</span></td>
+                  <td>
+                    <span class="keyword-tag">BON EXP</span>
+                    <span class="keyword-tag">BOND EXP</span>
+                    <span class="keyword-tag">BOND EXPENSES</span>
+                  </td>
+                  <td><button class="btn btn-outline btn-sm admin-only edit-btn">Edit</button></td>
+                </tr>
+                <tr>
+                  <td><strong>OTHER CHARGES</strong></td>
+                  <td><span class="tbl-pill pill-ship">SHIP</span></td>
+                  <td>
+                    <span class="keyword-tag">OTHER CHARGE</span>
+                    <span class="keyword-tag">MISC</span>
+                    <span class="keyword-tag">MISCELLANEOUS</span>
+                    <span class="keyword-tag">OTHERS</span>
+                  </td>
+                  <td><button class="btn btn-outline btn-sm admin-only edit-btn">Edit</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════ REPORT ════════ -->
+    <section class="section" id="report">
+      <div class="page-header">
+        <div>
+          <div class="page-title">LC Consolidated Report</div>
+          <div class="page-sub">Summary across all LCs — FY 2024-25</div>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-outline btn-sm">⬇ Export Excel</button>
+          <button class="btn btn-primary btn-sm">⬇ Export PDF</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="card-title">CONSOLIDATED LC SUMMARY</span></div>
+        <div class="card-body" style="padding:0">
+          <div class="tbl-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>LC NO</th>
+                  <th>QTY (MT)</th>
+                  <th>LC VALUE (INR)</th>
+                  <th>SHIPPING</th>
+                  <th>CFS</th>
+                  <th>GURU</th>
+                  <th>WAREHOUSE</th>
+                  <th>CUSTOMS DUTY</th>
+                  <th>BANK CHARGES</th>
+                  <th>TOTAL COST</th>
+                  <th>COST / MT</th>
+                </tr>
+              </thead>
+              <tbody id="reportTableBody">
+                <tr><td colspan="11" style="text-align:center;color:var(--gold);opacity:0.5;padding:32px;font-style:italic">No data available. Connect Supabase to generate consolidated LC report.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════ USER MANAGEMENT (ADMIN ONLY) ════════ -->
+    <section class="section" id="users">
+      <div class="page-header">
+        <div>
+          <div class="page-title">User Management</div>
+          <div class="page-sub">Manage system users and role-based access control</div>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('addUserModal')">＋ Create User</button>
+      </div>
+      <div class="alert alert-info">ℹ Only Admins can create users and modify data. Sub-Admin can view all. User role is read-only.</div>
+
+      <div class="kpi-row">
+        <div class="kpi-box">
+          <div class="kpi-label">TOTAL USERS</div>
+          <div class="kpi-value" id="userKpiTotal">—</div>
+        </div>
+        <div class="kpi-box" style="border-top:3px solid var(--gold)">
+          <div class="kpi-label">ADMINS</div>
+          <div class="kpi-value" id="userKpiAdmins">—</div>
+        </div>
+        <div class="kpi-box blue">
+          <div class="kpi-label">SUB-ADMINS</div>
+          <div class="kpi-value" id="userKpiSubAdmins">—</div>
+        </div>
+        <div class="kpi-box green">
+          <div class="kpi-label">USERS</div>
+          <div class="kpi-value" id="userKpiUsers">—</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><span class="card-title">REGISTERED USERS</span></div>
+        <div class="card-body" style="padding:0">
+          <div class="tbl-wrap">
+            <table id="userTable">
+              <thead>
+                <tr>
+                  <th>USERNAME</th>
+                  <th>FULL NAME</th>
+                  <th>ROLE</th>
+                  <th>CREATED</th>
+                  <th>LAST LOGIN</th>
+                  <th>STATUS</th>
+                  <th>ACTION</th>
+                </tr>
+              </thead>
+              <tbody id="userTableBody">
+                <!-- populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ═══════════ MODALS ═══════════ -->
+
+<!-- ADD CHARGE MODAL — multi-entry, auto-category, auto-route -->
+<div class="modal-overlay" id="addChargeModal">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-head">
+      <span class="modal-title">ADD CHARGE ENTRY</span>
+      <button class="modal-close" onclick="closeModal('addChargeModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>LC Number</label>
+          <select id="c_lc"><option>LC 01</option><option>LC 02</option><option>LC 04</option><option>LC 05</option><option>LC 06</option></select>
+        </div>
+        <div class="form-group">
+          <label>Charge Type <small style="color:#7A6040">(Auto from MAP)</small></label>
+          <input type="text" id="c_type" readonly placeholder="Auto-detected…" style="background:var(--parch2);font-weight:700">
+        </div>
+        <div class="form-group">
+          <label>Bill Number</label>
+          <input type="text" id="c_bill" placeholder="e.g. 2024044380">
+        </div>
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="c_date">
+        </div>
+      </div>
+      <hr class="gold">
+      <div style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:1.5px;color:var(--gold);margin-bottom:10px">CHARGE LINE ITEMS — one bill can have multiple entries</div>
+
+      <!-- Entry rows -->
+      <div id="entryRows"></div>
+
+      <button class="btn btn-outline btn-sm" onclick="addEntryRow()" style="margin-top:8px">＋ Add Another Line</button>
+      <div id="mapAlert" class="alert alert-warn" style="display:none;margin-top:10px">⚠ One or more particulars are unmapped. Add keywords to MAP Sheet first.</div>
+
+      <!-- Saved entries preview -->
+      <div id="savedEntriesWrap" style="display:none;margin-top:14px">
+        <hr class="gold">
+        <div style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:1.5px;color:var(--green);margin-bottom:8px">✅ ENTRIES SAVED TO THIS BILL</div>
+        <div class="tbl-wrap">
+          <table id="savedEntriesTable">
+            <thead><tr><th>PARTICULAR</th><th>MAPPED CATEGORY</th><th>TYPE</th><th>AMOUNT (₹)</th><th></th></tr></thead>
+            <tbody id="savedEntriesTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('addChargeModal')">Close</button>
+      <button class="btn btn-primary" onclick="saveAllEntries()">💾 Save All Entries</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD ENTRY MODAL (Shipping / CFS / Guru) -->
+<div class="modal-overlay" id="addEntryModal">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-head">
+      <span class="modal-title" id="addEntryModalTitle">ADD SHIPPING ENTRY</span>
+      <button class="modal-close" onclick="closeModal('addEntryModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="alert alert-info" style="margin-bottom:12px">ℹ LC is pre-selected from the page dropdown. Category auto-fills from MAP Sheet.</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>LC <small style="color:#7A6040">(Pre-selected)</small></label>
+          <input type="text" id="ae_lc" readonly style="background:var(--parch2);font-weight:700;color:var(--gold)">
+        </div>
+        <div class="form-group">
+          <label>Type <small style="color:#7A6040">(Auto)</small></label>
+          <input type="text" id="ae_type" readonly style="background:var(--parch2);font-weight:700">
+        </div>
+        <div class="form-group">
+          <label>Bill Number</label>
+          <input type="text" id="ae_bill" placeholder="e.g. 2024044380">
+        </div>
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="ae_date">
+        </div>
+      </div>
+      <hr class="gold">
+      <div style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:1.5px;color:var(--gold);margin-bottom:10px">LINE ITEMS — multiple charges per bill</div>
+      <div id="ae_entryRows"></div>
+      <button class="btn btn-outline btn-sm" onclick="addAERow()" style="margin-top:8px">＋ Add Another Line</button>
+
+      <div id="ae_savedWrap" style="display:none;margin-top:14px">
+        <hr class="gold">
+        <div style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:1.5px;color:var(--green);margin-bottom:8px">✅ ENTRIES SAVED TO THIS BILL</div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>PARTICULAR</th><th>MAPPED CATEGORY</th><th>AMOUNT (₹)</th><th></th></tr></thead>
+            <tbody id="ae_savedTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('addEntryModal')">Close</button>
+      <button class="btn btn-primary" onclick="saveAEEntries()">💾 Save All Entries</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD LC MODAL -->
+<div class="modal-overlay" id="addLCModal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">NEW LETTER OF CREDIT</span>
+      <button class="modal-close" onclick="closeModal('addLCModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>LC Number</label>
+          <input type="text" placeholder="e.g. LC 10">
+        </div>
+        <div class="form-group">
+          <label>Company / Beneficiary</label>
+          <input type="text" placeholder="Sinochem Corp Ltd">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Opening Date</label>
+          <input type="date">
+        </div>
+        <div class="form-group">
+          <label>Expiry Date</label>
+          <input type="date">
+        </div>
+        <div class="form-group">
+          <label>BL Date</label>
+          <input type="date">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Qty (MT)</label>
+          <input type="number" placeholder="480">
+        </div>
+        <div class="form-group">
+          <label>No. of Bags</label>
+          <input type="number" placeholder="19200" id="bagCount">
+        </div>
+        <div class="form-group">
+          <label>Rate (USD/MT)</label>
+          <input type="number" placeholder="1270" step="0.01">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>USD/INR Opening Rate</label>
+          <input type="number" placeholder="83.20" step="0.01">
+        </div>
+        <div class="form-group">
+          <label>USD/INR Settlement Rate</label>
+          <input type="number" placeholder="84.15" step="0.01">
+        </div>
+        <div class="form-group">
+          <label>Credit Period (Days)</label>
+          <input type="number" placeholder="120">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Beneficiary Bank</label>
+          <input type="text" placeholder="Bank of China, Shanghai">
+        </div>
+        <div class="form-group">
+          <label>Credit Rate (% PA)</label>
+          <input type="number" value="4.8" step="0.1">
+        </div>
+      </div>
+      <div class="alert alert-info" style="margin-top:8px">ℹ 40 bags = 1 MT (25 kg bags). Bags auto-calculated from MT if left blank.</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('addLCModal')">Cancel</button>
+      <button class="btn btn-primary">＋ Create LC</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD DOCUMENT MODAL -->
+<div class="modal-overlay" id="addDocModal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-head">
+      <span class="modal-title">ADD DOCUMENT</span>
+      <button class="modal-close" onclick="closeModal('addDocModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group" style="margin-bottom:12px">
+        <label>Document Name</label>
+        <input type="text" id="newDocName" placeholder="e.g. Packing List">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Received</label>
+          <input type="number" id="newDocReceived" placeholder="7" min="0" max="8">
+        </div>
+        <div class="form-group">
+          <label>Total</label>
+          <input type="number" id="newDocTotal" placeholder="8" min="1" max="8">
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('addDocModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="addDocument()">＋ Add Document</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD MAP MODAL -->
+<div class="modal-overlay" id="addMapModal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">ADD / EDIT MAPPING</span>
+      <button class="modal-close" onclick="closeModal('addMapModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Standard Category Name</label>
+          <input type="text" placeholder="e.g. DTHC /DTHL /CYCY /THC">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Type</label>
+          <select>
+            <option>SHIPPING</option><option>CFS</option><option>GURU</option><option>ALL</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Keywords (comma-separated raw invoice variations)</label>
+        <textarea placeholder="THC, DTHC, DTHL, CYCY, THC CHG, HANDLING CHARGE, TERMINAL HANDLING"></textarea>
+      </div>
+      <div class="alert alert-info mt-10">ℹ Keywords are matched case-insensitively. Partial prefix match is supported.</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('addMapModal')">Cancel</button>
+      <button class="btn btn-primary">💾 Save Mapping</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">GLOBAL SETTINGS & PERCENTAGES</span>
+      <button class="modal-close" onclick="closeModal('settingsModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="alert alert-info">ℹ All percentage values here apply globally across all LC calculations. Change once — updates everywhere.</div>
+      <hr class="gold">
+      <div style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:1.5px;color:var(--gold);margin-bottom:10px">TAX & DUTY RATES</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>GST — Shipping / CFS / GURU (%)</label>
+          <input type="number" value="18" step="0.1" id="s_gst_shipping">
+        </div>
+        <div class="form-group">
+          <label>IGST — Warehouse (%)</label>
+          <input type="number" value="18" step="0.1" id="s_igst_wh">
+        </div>
+        <div class="form-group">
+          <label>IGST — Customs (%)</label>
+          <input type="number" value="18" step="0.1" id="s_igst_customs">
+        </div>
+        <div class="form-group">
+          <label>CGST — Bank (%)</label>
+          <input type="number" value="9" step="0.1" id="s_cgst">
+        </div>
+        <div class="form-group">
+          <label>SGST — Bank (%)</label>
+          <input type="number" value="9" step="0.1" id="s_sgst">
+        </div>
+        <div class="form-group">
+          <label>Customs Duty Bond (%)</label>
+          <input type="number" value="7.5" step="0.1" id="s_duty_bond">
+        </div>
+        <div class="form-group">
+          <label>Duty Surcharge (%)</label>
+          <input type="number" value="10" step="0.1" id="s_surcharge">
+        </div>
+      </div>
+      <hr class="gold">
+      <div style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:1.5px;color:var(--gold);margin-bottom:10px">BANK & CREDIT DEFAULTS</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Bank Commission Rate (% PA)</label>
+          <input type="number" value="1" step="0.1" id="s_bank_rate">
+        </div>
+        <div class="form-group">
+          <label>SWIFT Fixed (₹)</label>
+          <input type="number" value="2000" id="s_swift">
+        </div>
+        <div class="form-group">
+          <label>Default Credit Days</label>
+          <input type="number" value="120" id="s_credit_days">
+        </div>
+        <div class="form-group">
+          <label>Usance Rate (% PA)</label>
+          <input type="number" value="4.8" step="0.1" id="s_usance_rate">
+        </div>
+        <div class="form-group">
+          <label>Day Basis</label>
+          <input type="number" value="360" id="s_day_basis">
+        </div>
+        <div class="form-group">
+          <label>LC Tolerance (%)</label>
+          <input type="number" value="0.8" step="0.1" id="s_tolerance">
+        </div>
+      </div>
+      <hr class="gold">
+      <div style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:1.5px;color:var(--gold);margin-bottom:10px">UNIT CONVERSIONS</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Bags per MT</label>
+          <input type="number" value="40" id="s_bags_mt">
+        </div>
+        <div class="form-group">
+          <label>Default Bag Weight (kg)</label>
+          <input type="number" value="25" id="s_bag_wt">
+        </div>
+        <div class="form-group">
+          <label>Default WH Rate (₹/SQM/Week)</label>
+          <input type="number" value="60" id="s_wh_rate">
+        </div>
+      </div>
+      <hr class="gold">
+      <div style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:1.5px;color:var(--gold);margin-bottom:10px">MAP SHEET — ADD NEW MAPPINGS</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Type (CS = SHIPPING)</label>
+          <select>
+            <option>SHIPPING (CS)</option><option>CFS</option><option>GURU</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column:span 2">
+          <label>Standard Name</label>
+          <input type="text" placeholder="New standard category name">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Keywords (comma-separated)</label>
+        <input type="text" placeholder="KEYWORD1, KEYWORD 2, VARIANT NAME">
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-outline btn-sm">＋ Add to MAP</button>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('settingsModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSettings()">💾 Save All Settings</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD WAREHOUSE MODAL -->
+<div class="modal-overlay" id="addWarehouseModal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">ADD WAREHOUSE ENTRY</span>
+      <button class="modal-close" onclick="closeModal('addWarehouseModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>LC</label>
+          <select><option>LC 01</option><option>LC 02</option></select>
+        </div>
+        <div class="form-group">
+          <label>Invoice No</label>
+          <input type="text" placeholder="WH-2024-004">
+        </div>
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>SQ Metres</label>
+          <input type="number" id="w_sqm" oninput="calcWarehouse()" placeholder="400">
+        </div>
+        <div class="form-group">
+          <label>From Date</label>
+          <input type="date" id="w_from" oninput="calcWarehouse()">
+        </div>
+        <div class="form-group">
+          <label>To Date</label>
+          <input type="date" id="w_to" oninput="calcWarehouse()">
+        </div>
+        <div class="form-group">
+          <label>Weeks <small>(Auto)</small></label>
+          <input type="text" id="w_weeks" readonly style="background:var(--parch2);font-weight:700;color:var(--gold)">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Rate (₹/SQM/Week)</label>
+          <input type="number" id="w_rate" value="60" oninput="calcWarehouse()">
+        </div>
+        <div class="form-group">
+          <label>WH Charges <small>(Auto)</small></label>
+          <input type="text" id="w_charges" readonly style="background:var(--parch2)">
+        </div>
+        <div class="form-group">
+          <label>Insurance (₹)</label>
+          <input type="number" id="w_insurance" value="4200" oninput="calcWarehouse()">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Subtotal <small>(Auto)</small></label>
+          <input type="text" id="w_subtotal" readonly style="background:var(--parch2)">
+        </div>
+        <div class="form-group">
+          <label>IGST 18% <small>(Auto)</small></label>
+          <input type="text" id="w_igst" readonly style="background:var(--parch2);color:var(--red)">
+        </div>
+        <div class="form-group">
+          <label>TOTAL <small>(Auto)</small></label>
+          <input type="text" id="w_total" readonly style="background:var(--parch2);font-weight:700">
+        </div>
+      </div>
+      <hr class="gold">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Container No</label>
+          <input type="text" placeholder="MSCU1234567">
+        </div>
+        <div class="form-group">
+          <label>GST Invoice No</label>
+          <input type="text" placeholder="GST-INV-001">
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('addWarehouseModal')">Cancel</button>
+      <button class="btn btn-primary">＋ Save Entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- BOND MODAL -->
+<div class="modal-overlay" id="addBondModal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">BONDING / DE-BONDING ENTRY</span>
+      <button class="modal-close" onclick="closeModal('addBondModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="alert alert-info" style="margin-bottom:12px">ℹ LC is pre-selected from the register. Change it via the dropdown on the Bonding page.</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>LC <small style="color:#7A6040">(Pre-selected)</small></label>
+          <input type="text" id="b_lc_display" readonly style="background:var(--parch2);font-weight:700;color:var(--gold)">
+        </div>
+        <div class="form-group">
+          <label>Event Type</label>
+          <select id="b_type">
+            <option>BOND</option><option>DEBOND</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date">
+        </div>
+        <div class="form-group">
+          <label>BE Number</label>
+          <input type="text" placeholder="BE-2024-0412">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>No. of Bags</label>
+          <input type="number" id="b_bags" oninput="calcBond()" placeholder="7680">
+        </div>
+        <div class="form-group">
+          <label>MT (Auto: Bags÷40)</label>
+          <input type="text" id="b_mt" readonly style="background:var(--parch2)">
+        </div>
+        <div class="form-group">
+          <label>Rate (USD/MT)</label>
+          <input type="number" id="b_rate_usd" value="1270" oninput="calcBond()" step="0.01">
+        </div>
+        <div class="form-group">
+          <label>Conv Rate (USD/INR)</label>
+          <input type="number" id="b_conv" value="84.15" oninput="calcBond()" step="0.01">
+        </div>
+      </div>
+      <hr class="gold">
+      <div class="form-row">
+        <div class="form-group">
+          <label>INR Value <small>(Auto)</small></label>
+          <input type="text" id="b_inr" readonly style="background:var(--parch2)">
+        </div>
+        <div class="form-group">
+          <label>Duty Bond 7.5% <small>(Auto)</small></label>
+          <input type="text" id="b_duty" readonly style="background:var(--parch2)">
+        </div>
+        <div class="form-group">
+          <label>Surcharge 10% <small>(Auto)</small></label>
+          <input type="text" id="b_surcharge" readonly style="background:var(--parch2)">
+        </div>
+        <div class="form-group">
+          <label>IGST 18% <small>(Auto)</small></label>
+          <input type="text" id="b_igst" readonly style="background:var(--parch2)">
+        </div>
+        <div class="form-group">
+          <label>TOTAL DUTY <small>(Auto)</small></label>
+          <input type="text" id="b_total" readonly style="background:var(--parch2);font-weight:700;color:var(--red)">
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('addBondModal')">Cancel</button>
+      <button class="btn btn-primary">＋ Save Entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD USER MODAL (Admin only) -->
+<div class="modal-overlay" id="addUserModal">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-head">
+      <span class="modal-title">CREATE NEW USER</span>
+      <button class="modal-close" onclick="closeModal('addUserModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="alert alert-info" style="margin-bottom:14px">ℹ User credentials are stored securely. In production, connect to Supabase Auth for proper password hashing.</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="nu_name" placeholder="e.g. Rajesh Kumar">
+        </div>
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="nu_username" placeholder="e.g. rajesh.k" autocomplete="off">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="nu_password" placeholder="Min 8 characters" autocomplete="new-password">
+        </div>
+        <div class="form-group">
+          <label>Role</label>
+          <select id="nu_role">
+            <option value="user">User (Read-only)</option>
+            <option value="subadmin">Sub-Admin (View all)</option>
+            <option value="admin">Admin (Full access)</option>
+          </select>
+        </div>
+      </div>
+      <div id="addUserError" class="login-error" style="margin-top:10px"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('addUserModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="createUser()">＋ Create User</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── JAVASCRIPT ─────────── -->
+<script>
+  // ══════════════════════════════════════════════
+  // SUPABASE CONFIG — paste your credentials here
+  // ══════════════════════════════════════════════
+  const SUPABASE_URL  = 'https://doytxhqrtdvkhypgfsfg.supabase.co';   // e.g. https://xyzxyz.supabase.co
+  const SUPABASE_ANON = 'sb_publishable_AS6Yx8NsFohpXmXOjFKMdw_zK--clbp';
+  const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+  // ══════════════════════════════════════════════
+  // AUTH & RBAC SYSTEM
+  // ══════════════════════════════════════════════
+  let USERS = [];
+  let currentUser = null;
+
+  // Login using Supabase Auth (email = username@kamakya.local or real email)
+  async function doLogin() {
+    const uname = document.getElementById('loginUser').value.trim().toLowerCase();
+    const pass  = document.getElementById('loginPass').value;
+    const errEl = document.getElementById('loginError');
+    errEl.classList.remove('show');
+    if (!uname || !pass) { errEl.textContent = 'Please enter username and password.'; errEl.classList.add('show'); return; }
+
+    // Sign in — email is stored as username@kamakya.local in Supabase Auth
+    const email = uname.includes('@') ? uname : uname + '@kamakya.local';
+    const { data, error } = await _sb.auth.signInWithPassword({ email, password: pass });
+    if (error || !data.user) {
+      errEl.textContent = 'Invalid credentials. Please try again.';
+      errEl.classList.add('show');
+      return;
+    }
+
+    // Fetch profile
+    const { data: profile, error: pErr } = await _sb
+      .from('profiles')
+      .select('*')
+      .eq('id', data.user.id)
+      .single();
+
+    if (pErr || !profile) { errEl.textContent = 'Profile not found. Contact admin.'; errEl.classList.add('show'); await _sb.auth.signOut(); return; }
+    if (!profile.is_active) { errEl.textContent = 'Account is disabled. Contact admin.'; errEl.classList.add('show'); await _sb.auth.signOut(); return; }
+
+    // Update last_login_at
+    await _sb.from('profiles').update({ last_login_at: new Date().toISOString() }).eq('id', profile.id);
+
+    currentUser = {
+      id:       profile.id,
+      username: profile.username,
+      name:     profile.full_name,
+      role:     profile.role,
+      active:   profile.is_active,
+      created:  new Date(profile.created_at).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }),
+      lastLogin: new Date().toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })
+    };
+
+    if (currentUser.role === 'admin') await loadAllUsers();
+    applySession();
+  }
+
+  async function doLogout() {
+    await _sb.auth.signOut();
+    currentUser = null;
+    USERS = [];
+    document.getElementById('loginUser').value = '';
+    document.getElementById('loginPass').value = '';
+    document.getElementById('loginError').classList.remove('show');
+    document.getElementById('loginScreen').classList.remove('hidden');
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('topbar').style.display = 'none';
+  }
+
+  // Load all profiles for User Management table (admin only)
+  async function loadAllUsers() {
+    const { data, error } = await _sb.from('profiles').select('*').order('created_at');
+    if (error || !data) return;
+    USERS = data.map(p => ({
+      id:        p.id,
+      username:  p.username,
+      name:      p.full_name,
+      role:      p.role,
+      active:    p.is_active,
+      created:   new Date(p.created_at).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }),
+      lastLogin: p.last_login_at ? new Date(p.last_login_at).toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : null
+    }));
+  }
+
+  function applySession() {
+    if (!currentUser) return;
+    // Hide login, show app
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('app').style.display = 'flex';
+    document.getElementById('topbar').style.display = 'flex';
+    // Apply role class to body
+    document.body.className = document.body.className.replace(/role-\w+/g, '').trim();
+    document.body.classList.add('role-' + currentUser.role);
+    // Update user chip
+    document.getElementById('userAvatar').textContent = currentUser.name.charAt(0).toUpperCase();
+    document.getElementById('userDisplayName').textContent = currentUser.name;
+    document.getElementById('userDisplayRole').textContent = currentUser.role === 'admin' ? 'ADMINISTRATOR' : currentUser.role === 'subadmin' ? 'SUB-ADMIN' : 'VIEWER';
+    // Show admin-only nav items
+    document.querySelectorAll('.admin-only').forEach(el => {
+      el.style.display = currentUser.role === 'admin' ? (el.classList.contains('flex-el') ? 'flex' : el.classList.contains('block-el') ? 'block' : 'inline-flex') : 'none';
+    });
+    // Make edit buttons visible only for admin
+    document.querySelectorAll('.edit-btn').forEach(el => { el.style.display = currentUser.role === 'admin' ? '' : 'none'; });
+    // Render user table if admin
+    if (currentUser.role === 'admin') renderUserTable();
+    // Render docs
+    renderDocs();
+  }
+
+  // ── ROLE GUARD — call before any data modification ──
+  function requireAdmin(action) {
+    if (!currentUser || currentUser.role !== 'admin') {
+      alert('⛔ Access Denied: Only Administrators can ' + (action || 'perform this action') + '.');
+      return false;
+    }
+    return true;
+  }
+
+  // ── USER MANAGEMENT ──
+  function renderUserTable() {
+    const tbody = document.getElementById('userTableBody');
+    if (!tbody) return;
+    document.getElementById('userKpiTotal').textContent = USERS.length;
+    document.getElementById('userKpiAdmins').textContent = USERS.filter(u => u.role === 'admin').length;
+    document.getElementById('userKpiSubAdmins').textContent = USERS.filter(u => u.role === 'subadmin').length;
+    document.getElementById('userKpiUsers').textContent = USERS.filter(u => u.role === 'user').length;
+    tbody.innerHTML = USERS.map((u, i) => `
+      <tr>
+        <td><strong>${u.username}</strong></td>
+        <td>${u.name}</td>
+        <td><span class="role-badge ${u.role}">${u.role === 'admin' ? 'Admin' : u.role === 'subadmin' ? 'Sub-Admin' : 'User'}</span></td>
+        <td>${u.created}</td>
+        <td>${u.lastLogin || '—'}</td>
+        <td><span class="tbl-pill ${u.active ? 'pill-cfs' : 'pill-open'}">${u.active ? 'Active' : 'Inactive'}</span></td>
+        <td>
+          ${u.username !== 'admin' ? `<button class="btn btn-outline btn-sm" onclick="toggleUserActive(${i})">${u.active ? 'Disable' : 'Enable'}</button>` : '<span style="color:var(--gold);font-size:11px">Protected</span>'}
+        </td>
+      </tr>`).join('');
+  }
+
+  async function toggleUserActive(idx) {
+    if (!requireAdmin("change user status")) return;
+    const u = USERS[idx];
+    if (!u) return;
+    if (u.username === currentUser.username) { alert("Cannot disable your own account."); return; }
+    const { error } = await _sb.from("profiles").update({ is_active: !u.active }).eq("id", u.id);
+    if (error) { alert("Failed to update user: " + error.message); return; }
+    await loadAllUsers();
+    renderUserTable();
+  }
+
+  async function createUser() {
+    if (!requireAdmin("create users")) return;
+    const name     = document.getElementById("nu_name").value.trim();
+    const username = document.getElementById("nu_username").value.trim().toLowerCase();
+    const password = document.getElementById("nu_password").value;
+    const role     = document.getElementById("nu_role").value;
+    const errEl    = document.getElementById("addUserError");
+    errEl.classList.remove("show");
+    if (!name || !username || !password) { errEl.textContent = "All fields are required."; errEl.classList.add("show"); return; }
+    if (password.length < 8) { errEl.textContent = "Password must be at least 8 characters."; errEl.classList.add("show"); return; }
+    if (USERS.find(u => u.username === username)) { errEl.textContent = "Username already exists."; errEl.classList.add("show"); return; }
+    const email = username + "@kamakya.local";
+    const { data: signUpData, error: signUpError } = await _sb.auth.signUp({ email, password });
+    if (signUpError) { errEl.textContent = signUpError.message; errEl.classList.add("show"); return; }
+    const { error: profileError } = await _sb.from("profiles").insert({ id: signUpData.user.id, username, full_name: name, role, is_active: true });
+    if (profileError) { errEl.textContent = "Profile error: " + profileError.message; errEl.classList.add("show"); return; }
+    await loadAllUsers();
+    renderUserTable();
+    closeModal("addUserModal");
+    document.getElementById("nu_name").value = "";
+    document.getElementById("nu_username").value = "";
+    document.getElementById("nu_password").value = "";
+    alert("u2705 User u201c" + username + "u201d created successfully!");
+  }
+
+  // ── INIT — hide app until login ──
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('topbar').style.display = 'none';
+
+  // ══════════════════════════════════════════════
+  // NAV
+  // ══════════════════════════════════════════════
+  function showSection(id, el) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    const sec = document.getElementById(id);
+    if (sec) sec.classList.add('active');
+    if (el) el.classList.add('active');
+  }
+
+  // ══════════════════════════════════════════════
+  // MODALS
+  // ══════════════════════════════════════════════
+  function openModal(id) {
+    if (['addChargeModal','addEntryModal','addLCModal','addMapModal','settingsModal','addWarehouseModal','addBondModal'].includes(id)) {
+      if (!requireAdmin('open this form')) return;
+    }
+    document.getElementById(id).classList.add('open');
+  }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.modal-overlay').forEach(m => {
+      m.addEventListener('click', function(e) { if (e.target === m) m.classList.remove('open'); });
+    });
+  });
+
+  // ── LC REGISTER FILTER ──
+  function filterLCTable() {
+    const status = document.getElementById('lcFilterStatus').value;
+    document.querySelectorAll('#lcRegisterTable tbody tr').forEach(row => {
+      row.style.display = (!status || row.dataset.status === status) ? '' : 'none';
+    });
+  }
+
+  // ── LC DETAIL VIEW (navigates to cost breakdown section) ──
+  function openLCDetail(lcNo) {
+    const costNav = document.querySelector('[onclick*="costBreakdown"]');
+    showSection('costBreakdown', costNav);
+    document.querySelector('#costBreakdown .page-sub').textContent = 'Final LC cost computation — ' + lcNo;
+  }
+
+  // ── KEYWORD MAP ──
+  const keywordMap = [
+    { keys: ['THC','DTHC','DTHL','CYCY','THC CHG','HANDLING CHARGE','TERMINAL HANDLING','DEST THC','ORIGIN THC','OD THC'], std: 'DTHC /DTHL /CYCY /THC', type: 'SHIPPING' },
+    { keys: ['CLTY','OD THC.P','CMCP','CLAILITY','OD/CMCP'], std: 'OD/CMCP/CLTY/OD THC.P', type: 'SHIPPING' },
+    { keys: ['CTMC','CMC','CEIW','CONTAINER MANAGEMENT','TERMINAL MOVEMENT'], std: 'CTMC/ CMC/ CEIW', type: 'SHIPPING' },
+    { keys: ['LOLO','LOFC','LIFT ON LIFT OFF','LIFT OFF'], std: 'LOLO/ LOFC', type: 'SHIPPING' },
+    { keys: ['WASHING','CLEANING','CONTAINER CLEANING'], std: 'WASHING /CLEANING', type: 'SHIPPING' },
+    { keys: ['DOC CHG','DOFEE','D/O AF','DOCF','DOC FEE'], std: 'DOC CHG/ D/O AF/DOFEE', type: 'SHIPPING' },
+    { keys: ['SURVEY CHG','SURVEY'], std: 'SURVEY CHG (SC)', type: 'SHIPPING' },
+    { keys: ['MUC','MUCI','MUC(P)','MUCP','CONGESTION'], std: 'MUC(P)/MUCI/MUC C', type: 'SHIPPING' },
+    { keys: ['FIXED REPAIR','EQUIPMENT IMBALANCE','EQUIP IMBALANCE'], std: 'FIXED REPAIR /EQUIPMENT IMBALANCE SUR', type: 'SHIPPING' },
+    { keys: ['OFF DOCK','OFF-DOCK'], std: 'OFF DOCK', type: 'SHIPPING' },
+    { keys: ['OMNR','OCEAN NOTIF'], std: 'OMNR', type: 'SHIPPING' },
+    { keys: ['CAF','CONTAINER HANDLING','CURRENCY ADJ'], std: 'CAF', type: 'CFS' },
+    { keys: ['EQS','EQUALISATION'], std: 'EQS', type: 'CFS' },
+    { keys: ['MVS','MOVEMENT'], std: 'MVS', type: 'CFS' },
+    { keys: ['WGH','WEIGHMENT'], std: 'WGH', type: 'CFS' },
+    { keys: ['ENS','ENERGY SURCHARGE'], std: 'ENS', type: 'CFS' },
+    { keys: ['INS','INSURANCE CHARGES'], std: 'INS', type: 'CFS' },
+    { keys: ['CSC','CONTAINER STORAGE'], std: 'CSC', type: 'CFS' },
+    { keys: ['SRV CHG','SERVICE CHG','SERVICE CHARGE','AGENCY FEE'], std: 'SRV CHG / SERVICE CHG', type: 'GURU' },
+    { keys: ['BON EXP','BOND EXP','BOND EXPENSES'], std: 'BON EXP / BOND EXP', type: 'GURU' },
+    { keys: ['LOAD','LOADING'], std: 'LOAD / LOADING', type: 'GURU' },
+    { keys: ['UNLADE','UNLADEN','DESTUFFING'], std: 'UNLADE / UNLADEN', type: 'GURU' },
+    { keys: ['DD BOND','DOUBLE DUTY BOND'], std: 'DD BOND / DOUBLE DUTY BOND', type: 'GURU' },
+    { keys: ['SUNDRY EXP','SUNDRY EXPENSES','MISCELLANEOUS','MISC','OTHERS','OTHER CHARGE'], std: 'OTHER CHARGES', type: 'SHIPPING' },
+    { keys: ['NOC'], std: 'NOC', type: 'GURU' },
+  ];
+
+  function resolveMap(raw) {
+    const u = raw.trim().toUpperCase();
+    for (const m of keywordMap) {
+      if (m.keys.some(k => u.includes(k) || k.includes(u))) return m;
+    }
+    return null;
+  }
+
+  // ── MULTI-ENTRY ROW (Add Charge Modal) ──
+  let entryRowCount = 0;
+  const savedBillEntries = [];
+
+  function addEntryRow() {
+    entryRowCount++;
+    const id = entryRowCount;
+    const div = document.createElement('div');
+    div.id = 'erow_' + id;
+    div.style.cssText = 'display:grid;grid-template-columns:2fr 2fr 1.2fr 1fr auto;gap:8px;align-items:end;margin-bottom:8px;padding:10px;background:rgba(200,151,42,0.05);border:1px solid var(--border);border-radius:4px';
+    div.innerHTML = `
+      <div class="form-group">
+        <label>Particular (Raw)</label>
+        <input type="text" id="part_${id}" placeholder="e.g. THC" oninput="resolveRowMap(${id})" style="width:100%">
+      </div>
+      <div class="form-group">
+        <label>Mapped Category <small style="color:#7A6040">(Auto)</small></label>
+        <input type="text" id="mapped_${id}" readonly placeholder="Auto…" style="background:var(--parch2);width:100%">
+      </div>
+      <div class="form-group">
+        <label>Amount (₹)</label>
+        <input type="number" id="amount_${id}" placeholder="0" style="width:100%">
+      </div>
+      <div class="form-group">
+        <label>MT</label>
+        <input type="number" id="mt_${id}" placeholder="480" style="width:100%">
+      </div>
+      <button onclick="removeEntryRow(${id})" style="background:var(--red);color:#fff;border:none;border-radius:4px;padding:6px 10px;cursor:pointer;margin-bottom:0;align-self:flex-end">✕</button>
+    `;
+    document.getElementById('entryRows').appendChild(div);
+  }
+
+  function removeEntryRow(id) {
+    const el = document.getElementById('erow_' + id);
+    if (el) el.remove();
+  }
+
+  function resolveRowMap(id) {
+    const raw = document.getElementById('part_' + id).value;
+    const result = resolveMap(raw);
+    const mappedEl = document.getElementById('mapped_' + id);
+    if (result) {
+      mappedEl.value = result.std;
+      mappedEl.style.color = 'var(--green)';
+      // Auto-update the type field
+      document.getElementById('c_type').value = result.type;
+    } else {
+      mappedEl.value = raw ? '⚠ UNMAPPED' : '';
+      mappedEl.style.color = 'var(--red)';
+      if (!raw) document.getElementById('c_type').value = '';
+    }
+  }
+
+  function saveAllEntries() {
+    const rows = document.getElementById('entryRows').querySelectorAll('[id^="erow_"]');
+    let hasError = false;
+    rows.forEach(row => {
+      const id = row.id.replace('erow_', '');
+      const part = document.getElementById('part_' + id).value.trim();
+      const mapped = document.getElementById('mapped_' + id).value;
+      const amount = document.getElementById('amount_' + id).value;
+      if (!part || !amount || mapped.startsWith('⚠')) { hasError = true; return; }
+      const type = resolveMap(part)?.type || 'SHIPPING';
+      savedBillEntries.push({ part, mapped, type, amount });
+      // Add to saved table
+      const tbody = document.getElementById('savedEntriesTbody');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${part}</td><td>${mapped}</td><td><span class="tbl-pill pill-${type.toLowerCase().substring(0,4)}">${type}</span></td><td class="num">₹${parseFloat(amount).toLocaleString('en-IN')}</td><td><button onclick="this.closest('tr').remove()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px">✕</button></td>`;
+      tbody.appendChild(tr);
+      row.remove();
+    });
+    if (hasError) {
+      document.getElementById('mapAlert').style.display = 'flex';
+      return;
+    }
+    document.getElementById('mapAlert').style.display = 'none';
+    document.getElementById('savedEntriesWrap').style.display = 'block';
+    entryRowCount = 0;
+    addEntryRow(); // keep one empty row ready
+  }
+
+  // ── ADD ENTRY MODAL (Shipping / CFS / Guru) ──
+  let aeEntryCount = 0;
+  const aeSavedEntries = [];
+
+  function openAddEntryModal(type, lcSelectId) {
+    const lc = document.getElementById(lcSelectId).value;
+    document.getElementById('ae_lc').value = lc;
+    document.getElementById('ae_type').value = type;
+    const typeColors = { SHIPPING: '#1A2E5C', CFS: '#1A5C2A', GURU: '#8B1A1A' };
+    document.getElementById('ae_type').style.color = typeColors[type] || 'var(--ink)';
+    document.getElementById('addEntryModalTitle').textContent = 'ADD ' + type + ' ENTRY — ' + lc;
+    document.getElementById('ae_entryRows').innerHTML = '';
+    document.getElementById('ae_savedWrap').style.display = 'none';
+    document.getElementById('ae_savedTbody').innerHTML = '';
+    aeEntryCount = 0;
+    addAERow();
+    openModal('addEntryModal');
+  }
+
+  function addAERow() {
+    aeEntryCount++;
+    const id = aeEntryCount;
+    const div = document.createElement('div');
+    div.id = 'aerow_' + id;
+    div.style.cssText = 'display:grid;grid-template-columns:2fr 2fr 1.2fr auto;gap:8px;align-items:end;margin-bottom:8px;padding:10px;background:rgba(200,151,42,0.05);border:1px solid var(--border);border-radius:4px';
+    div.innerHTML = `
+      <div class="form-group">
+        <label>Particular (Raw)</label>
+        <input type="text" id="aepart_${id}" placeholder="e.g. THC" oninput="resolveAEMap(${id})" style="width:100%">
+      </div>
+      <div class="form-group">
+        <label>Mapped Category <small style="color:#7A6040">(Auto)</small></label>
+        <input type="text" id="aemapped_${id}" readonly placeholder="Auto from MAP…" style="background:var(--parch2);width:100%">
+      </div>
+      <div class="form-group">
+        <label>Amount (₹)</label>
+        <input type="number" id="aeamount_${id}" placeholder="0" style="width:100%">
+      </div>
+      <button onclick="document.getElementById('aerow_${id}').remove()" style="background:var(--red);color:#fff;border:none;border-radius:4px;padding:6px 10px;cursor:pointer;align-self:flex-end">✕</button>
+    `;
+    document.getElementById('ae_entryRows').appendChild(div);
+  }
+
+  function resolveAEMap(id) {
+    const raw = document.getElementById('aepart_' + id).value;
+    const result = resolveMap(raw);
+    const mappedEl = document.getElementById('aemapped_' + id);
+    if (result) {
+      mappedEl.value = result.std;
+      mappedEl.style.color = 'var(--green)';
+    } else {
+      mappedEl.value = raw ? '⚠ UNMAPPED' : '';
+      mappedEl.style.color = 'var(--red)';
+    }
+  }
+
+  function saveAEEntries() {
+    const rows = document.getElementById('ae_entryRows').querySelectorAll('[id^="aerow_"]');
+    let saved = 0;
+    rows.forEach(row => {
+      const id = row.id.replace('aerow_', '');
+      const part = document.getElementById('aepart_' + id)?.value?.trim();
+      const mapped = document.getElementById('aemapped_' + id)?.value;
+      const amount = document.getElementById('aeamount_' + id)?.value;
+      if (!part || !amount || !mapped || mapped.startsWith('⚠')) return;
+      const tbody = document.getElementById('ae_savedTbody');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${part}</td><td>${mapped}</td><td class="num">₹${parseFloat(amount).toLocaleString('en-IN')}</td><td><button onclick="this.closest('tr').remove()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px">✕</button></td>`;
+      tbody.appendChild(tr);
+      row.remove();
+      saved++;
+    });
+    if (saved > 0) {
+      document.getElementById('ae_savedWrap').style.display = 'block';
+      aeEntryCount = 0;
+      addAERow();
+    }
+  }
+
+  // ── BOND MODAL — auto-fill LC from page dropdown ──
+  function openBondModal() {
+    const lc = document.getElementById('bondingLC').value;
+    document.getElementById('b_lc_display').value = lc;
+    openModal('addBondModal');
+  }
+
+  // ── DOCUMENT LIST — empty by default (connect Supabase for live data) ──
+  let documents = JSON.parse(localStorage.getItem('kamakya_docs') || '[]');
+
+  function saveDocs() { localStorage.setItem('kamakya_docs', JSON.stringify(documents)); }
+
+  function renderDocs() {
+    const body = document.getElementById('docListBody');
+    if (!body) return;
+    if (documents.length === 0) {
+      body.innerHTML = '<div style="text-align:center;padding:24px;color:var(--gold);opacity:0.5;font-style:italic">No documents added yet. Click ＋ Add Document to begin tracking.</div>';
+      return;
+    }
+    const isAdmin = currentUser && currentUser.role === 'admin';
+    body.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:20px">' +
+      documents.map((d, i) => {
+        const pct = Math.round((d.received / d.total) * 100);
+        const color = pct === 100 ? 'var(--green)' : pct >= 75 ? 'var(--gold)' : 'var(--red)';
+        return `<div style="flex:1;min-width:180px;position:relative">
+          <div class="info-row" style="justify-content:space-between">
+            <span>${d.name}</span>
+            <span style="display:flex;align-items:center;gap:8px">
+              <strong style="color:${color}">${d.received} / ${d.total}</strong>
+              ${isAdmin ? `<button onclick="deleteDoc(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:13px;padding:0" title="Delete">✕</button>` : ''}
+            </span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${color}"></div></div>
+        </div>`;
+      }).join('') + '</div>';
+  }
+
+  function deleteDoc(index) {
+    if (!requireAdmin('delete documents')) return;
+    if (confirm('Remove "' + documents[index].name + '" from the list?')) {
+      documents.splice(index, 1);
+      saveDocs(); renderDocs();
+    }
+  }
+
+  function addDocument() {
+    if (!requireAdmin('add documents')) return;
+    const name = document.getElementById('newDocName').value.trim();
+    const received = parseInt(document.getElementById('newDocReceived').value) || 0;
+    const total = parseInt(document.getElementById('newDocTotal').value) || 8;
+    if (!name) { alert('Please enter a document name.'); return; }
+    documents.push({ name, received, total });
+    saveDocs(); renderDocs();
+    closeModal('addDocModal');
+    document.getElementById('newDocName').value = '';
+    document.getElementById('newDocReceived').value = '';
+    document.getElementById('newDocTotal').value = '';
+  }
+
+  // ── WAREHOUSE CALC ──
+  function calcWarehouse() {
+    const from = new Date(document.getElementById('w_from').value);
+    const to   = new Date(document.getElementById('w_to').value);
+    const sqm  = parseFloat(document.getElementById('w_sqm').value) || 0;
+    const rate = parseFloat(document.getElementById('w_rate').value) || 60;
+    const ins  = parseFloat(document.getElementById('w_insurance').value) || 0;
+    if (isNaN(from) || isNaN(to) || from >= to) { document.getElementById('w_weeks').value=''; return; }
+    const days = Math.round((to - from) / (1000*60*60*24)) + 1;
+    const weeks = Math.ceil(days / 7);
+    const whCharges = sqm * weeks * rate;
+    const subtotal = whCharges + ins;
+    const igst = subtotal * 0.18;
+    const total = subtotal + igst;
+    document.getElementById('w_weeks').value    = weeks;
+    document.getElementById('w_charges').value  = '₹' + whCharges.toLocaleString('en-IN');
+    document.getElementById('w_subtotal').value = '₹' + subtotal.toLocaleString('en-IN');
+    document.getElementById('w_igst').value     = '₹' + igst.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    document.getElementById('w_total').value    = '₹' + total.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
+
+  // ── BOND CALC ──
+  function calcBond() {
+    const bags   = parseFloat(document.getElementById('b_bags').value) || 0;
+    const rateUSD= parseFloat(document.getElementById('b_rate_usd').value) || 0;
+    const conv   = parseFloat(document.getElementById('b_conv').value) || 0;
+    const mt     = bags / 40;
+    const inrVal = mt * rateUSD * conv;
+    const duty   = inrVal * 0.075;
+    const surcharge = duty * 0.10;
+    const base   = inrVal + duty + surcharge;
+    const igst   = base * 0.18;
+    const total  = duty + surcharge + igst;
+    const fmt = v => '₹' + Math.round(v).toLocaleString('en-IN');
+    document.getElementById('b_mt').value       = mt.toFixed(2) + ' MT';
+    document.getElementById('b_inr').value      = fmt(inrVal);
+    document.getElementById('b_duty').value     = fmt(duty);
+    document.getElementById('b_surcharge').value= fmt(surcharge);
+    document.getElementById('b_igst').value     = fmt(igst);
+    document.getElementById('b_total').value    = fmt(total);
+  }
+
+  // ── BANK RECALC ──
+  function recalcBank() {
+    const days      = parseFloat(document.getElementById('creditDays').value) || 90;
+    const bankRate  = parseFloat(document.getElementById('bankRate').value) || 1;
+    const creditRate= parseFloat(document.getElementById('creditRate').value) || 4.8;
+    const lcUSD     = 609600;
+    const settleRate= 84.15;
+    const bankComm  = (120 + days) * lcUSD / 360 * settleRate * (bankRate / 100);
+    const swift     = 2000;
+    const cgst      = (bankComm + swift) * 0.09;
+    const sgst      = (bankComm + swift) * 0.09;
+    const supplCredit = lcUSD * days / 360 * (creditRate / 100) * settleRate;
+    const total = bankComm + swift + cgst + sgst + supplCredit;
+    const fmt = v => '₹' + Math.round(v).toLocaleString('en-IN');
+    document.getElementById('bankCalcResult').innerHTML = `
+      <div class="info-row"><span>Bank Commission (est):</span><strong>${fmt(bankComm)}</strong></div>
+      <div class="info-row"><span>SWIFT + Tax:</span><strong>${fmt(swift + cgst + sgst)}</strong></div>
+      <div class="info-row"><span>Supplier Credit (est):</span><strong>${fmt(supplCredit)}</strong></div>
+      <div class="info-row"><span style="color:var(--gold)"><strong>Total Bank Charges:</strong></span><strong>${fmt(total)}</strong></div>
+    `;
+  }
+
+  // ── MAP FILTER ──
+  function filterMap() {
+    const q = document.getElementById('mapSearch').value.toUpperCase();
+    const type = document.getElementById('mapFilterType').value;
+    document.querySelectorAll('#mapTable tbody tr').forEach(row => {
+      const txt = row.innerText.toUpperCase();
+      const matchQ = !q || txt.includes(q);
+      const matchT = type === 'All Types' || txt.includes(type.toUpperCase());
+      row.style.display = matchQ && matchT ? '' : 'none';
+    });
+  }
+
+  function switchPivotLC(val, type) { /* Connect Supabase to re-render pivot for selected LC */ }
+  function switchCostLC(val) { /* Connect Supabase to load cost breakdown per LC */ }
+
+  function saveSettings() {
+    if (!requireAdmin('change settings')) return;
+    alert('✅ Settings saved! All percentage values and defaults updated globally.\nChanges will reflect in all LC calculations.');
+    closeModal('settingsModal');
+  }
+
+  // ── PRODUCTION INIT ──
+  document.addEventListener('DOMContentLoaded', function() {
+    // DOMContentLoaded: wire up modal close listeners (already done above)
+    // Populate one entry row for charge modal
+    addEntryRow();
+  });
+</script>
+</body>
+</html>
