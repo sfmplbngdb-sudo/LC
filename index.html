@@ -769,7 +769,7 @@
     <div class="login-error" id="loginError">Invalid username or password. Please try again.</div>
     <div class="login-form-group">
       <label class="login-label">EMAIL</label>
-      <input class="login-input" type="text" id="loginUser" placeholder="Enter your email address" autocomplete="username">
+      <input class="login-input" type="email" id="loginUser" placeholder="Enter your email address" autocomplete="email">
     </div>
     <div class="login-form-group">
       <label class="login-label">PASSWORD</label>
@@ -2123,7 +2123,7 @@
       <button class="modal-close" onclick="closeModal('addUserModal')">×</button>
     </div>
     <div class="modal-body">
-      <div class="alert alert-info" style="margin-bottom:14px">ℹ User credentials are stored securely. In production, connect to Supabase Auth for proper password hashing.</div>
+      <div class="alert alert-info" style="margin-bottom:14px">ℹ User will receive a confirmation email. Make sure email is correct.</div>
       <div class="form-row">
         <div class="form-group">
           <label>Full Name</label>
@@ -2135,16 +2135,16 @@
         </div>
       </div>
       <div class="form-row">
-        <div class="form-group">
+        <div class="form-group" style="flex:2">
           <label>Email</label>
           <input type="email" id="nu_email" placeholder="e.g. rajesh@gmail.com" autocomplete="off">
         </div>
+      </div>
+      <div class="form-row">
         <div class="form-group">
           <label>Password</label>
           <input type="password" id="nu_password" placeholder="Min 8 characters" autocomplete="new-password">
         </div>
-      </div>
-      <div class="form-row">
         <div class="form-group">
           <label>Role</label>
           <select id="nu_role">
@@ -2166,9 +2166,9 @@
 <!-- ─────────── JAVASCRIPT ─────────── -->
 <script>
   // ══════════════════════════════════════════════
-  // SUPABASE CONFIG — paste your credentials here
+  // SUPABASE CONFIG — paste your credentials below
   // ══════════════════════════════════════════════
-  const SUPABASE_URL  = 'https://doytxhqrtdvkhypgfsfg.supabase.co';   // e.g. https://xyzxyz.supabase.co
+  const SUPABASE_URL  = 'https://doytxhqrtdvkhypgfsfg.supabase.co';
   const SUPABASE_ANON = 'sb_publishable_AS6Yx8NsFohpXmXOjFKMdw_zK--clbp';
   const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -2178,53 +2178,57 @@
   let USERS = [];
   let currentUser = null;
 
-  // Login using Supabase Auth — user types their real email
   async function doLogin() {
     const email = document.getElementById('loginUser').value.trim().toLowerCase();
     const pass  = document.getElementById('loginPass').value;
     const errEl = document.getElementById('loginError');
+    const btn   = document.querySelector('.login-btn');
     errEl.classList.remove('show');
     if (!email || !pass) { errEl.textContent = 'Please enter email and password.'; errEl.classList.add('show'); return; }
-
-    // Sign in with real email directly
-    const { data, error } = await _sb.auth.signInWithPassword({ email, password: pass });
-    if (error || !data.user) {
-      errEl.textContent = 'Invalid credentials. Please try again.';
+    btn.textContent = 'SIGNING IN…'; btn.disabled = true;
+    try {
+      // Step 1: Sign in with Supabase Auth
+      const { data, error } = await _sb.auth.signInWithPassword({ email, password: pass });
+      if (error || !data.user) {
+        errEl.textContent = 'Invalid email or password. Please try again.';
+        errEl.classList.add('show'); return;
+      }
+      // Step 2: Fetch profile using auth UID
+      const { data: profile, error: pErr } = await _sb
+        .from('profiles').select('*').eq('id', data.user.id).single();
+      if (pErr || !profile) {
+        errEl.textContent = 'Profile not found. Contact your admin.';
+        errEl.classList.add('show'); await _sb.auth.signOut(); return;
+      }
+      if (!profile.is_active) {
+        errEl.textContent = 'Your account is disabled. Contact admin.';
+        errEl.classList.add('show'); await _sb.auth.signOut(); return;
+      }
+      // Step 3: Update last login
+      await _sb.from('profiles').update({ last_login_at: new Date().toISOString() }).eq('id', profile.id);
+      // Step 4: Set session
+      currentUser = {
+        id:        profile.id,
+        username:  profile.username,
+        name:      profile.full_name,
+        role:      profile.role,
+        active:    profile.is_active,
+        created:   new Date(profile.created_at).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }),
+        lastLogin: new Date().toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })
+      };
+      if (currentUser.role === 'admin') await loadAllUsers();
+      applySession();
+    } catch(e) {
+      errEl.textContent = 'Connection error. Check your internet.';
       errEl.classList.add('show');
-      return;
+    } finally {
+      btn.textContent = 'SIGN IN →'; btn.disabled = false;
     }
-
-    // Fetch profile
-    const { data: profile, error: pErr } = await _sb
-      .from('profiles')
-      .select('*')
-      .eq('id', data.user.id)
-      .single();
-
-    if (pErr || !profile) { errEl.textContent = 'Profile not found. Contact admin.'; errEl.classList.add('show'); await _sb.auth.signOut(); return; }
-    if (!profile.is_active) { errEl.textContent = 'Account is disabled. Contact admin.'; errEl.classList.add('show'); await _sb.auth.signOut(); return; }
-
-    // Update last_login_at
-    await _sb.from('profiles').update({ last_login_at: new Date().toISOString() }).eq('id', profile.id);
-
-    currentUser = {
-      id:       profile.id,
-      username: profile.username,
-      name:     profile.full_name,
-      role:     profile.role,
-      active:   profile.is_active,
-      created:  new Date(profile.created_at).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }),
-      lastLogin: new Date().toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })
-    };
-
-    if (currentUser.role === 'admin') await loadAllUsers();
-    applySession();
   }
 
   async function doLogout() {
     await _sb.auth.signOut();
-    currentUser = null;
-    USERS = [];
+    currentUser = null; USERS = [];
     document.getElementById('loginUser').value = '';
     document.getElementById('loginPass').value = '';
     document.getElementById('loginError').classList.remove('show');
@@ -2233,7 +2237,6 @@
     document.getElementById('topbar').style.display = 'none';
   }
 
-  // Load all profiles for User Management table (admin only)
   async function loadAllUsers() {
     const { data, error } = await _sb.from('profiles').select('*').order('created_at');
     if (error || !data) return;
@@ -2244,7 +2247,7 @@
       role:      p.role,
       active:    p.is_active,
       created:   new Date(p.created_at).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }),
-      lastLogin: p.last_login_at ? new Date(p.last_login_at).toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : null
+      lastLogin: p.last_login_at ? new Date(p.last_login_at).toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—'
     }));
   }
 
@@ -2305,41 +2308,39 @@
   }
 
   async function toggleUserActive(idx) {
-    if (!requireAdmin("change user status")) return;
-    const u = USERS[idx];
-    if (!u) return;
-    if (u.username === currentUser.username) { alert("Cannot disable your own account."); return; }
-    const { error } = await _sb.from("profiles").update({ is_active: !u.active }).eq("id", u.id);
-    if (error) { alert("Failed to update user: " + error.message); return; }
-    await loadAllUsers();
-    renderUserTable();
+    if (!requireAdmin('change user status')) return;
+    const u = USERS[idx]; if (!u) return;
+    if (u.id === currentUser.id) { alert('You cannot disable your own account.'); return; }
+    const { error } = await _sb.from('profiles').update({ is_active: !u.active }).eq('id', u.id);
+    if (error) { alert('Failed: ' + error.message); return; }
+    await loadAllUsers(); renderUserTable();
   }
 
   async function createUser() {
-    if (!requireAdmin("create users")) return;
-    const name     = document.getElementById("nu_name").value.trim();
-    const username = document.getElementById("nu_username").value.trim().toLowerCase();
-    const password = document.getElementById("nu_password").value;
-    const role     = document.getElementById("nu_role").value;
-    const errEl    = document.getElementById("addUserError");
-    errEl.classList.remove("show");
-    if (!name || !username || !password) { errEl.textContent = "All fields are required."; errEl.classList.add("show"); return; }
-    if (password.length < 8) { errEl.textContent = "Password must be at least 8 characters."; errEl.classList.add("show"); return; }
-    if (USERS.find(u => u.username === username)) { errEl.textContent = "Username already exists."; errEl.classList.add("show"); return; }
-    const email = document.getElementById("nu_email").value.trim().toLowerCase();
-    if (!email || !email.includes("@")) { errEl.textContent = "Valid email is required."; errEl.classList.add("show"); return; }
-    const { data: signUpData, error: signUpError } = await _sb.auth.signUp({ email, password });
-    if (signUpError) { errEl.textContent = signUpError.message; errEl.classList.add("show"); return; }
-    const { error: profileError } = await _sb.from("profiles").insert({ id: signUpData.user.id, username, full_name: name, role, is_active: true });
-    if (profileError) { errEl.textContent = "Profile error: " + profileError.message; errEl.classList.add("show"); return; }
-    await loadAllUsers();
-    renderUserTable();
-    closeModal("addUserModal");
-    document.getElementById("nu_name").value = "";
-    document.getElementById("nu_username").value = "";
-    document.getElementById("nu_email").value = "";
-    document.getElementById("nu_password").value = "";
-    alert("u2705 User u201c" + username + "u201d created successfully!");
+    if (!requireAdmin('create users')) return;
+    const name     = document.getElementById('nu_name').value.trim();
+    const username = document.getElementById('nu_username').value.trim().toLowerCase();
+    const email    = document.getElementById('nu_email').value.trim().toLowerCase();
+    const password = document.getElementById('nu_password').value;
+    const role     = document.getElementById('nu_role').value;
+    const errEl    = document.getElementById('addUserError');
+    errEl.classList.remove('show');
+    if (!name || !username || !email || !password) { errEl.textContent = 'All fields are required.'; errEl.classList.add('show'); return; }
+    if (!email.includes('@')) { errEl.textContent = 'Enter a valid email address.'; errEl.classList.add('show'); return; }
+    if (password.length < 8) { errEl.textContent = 'Password must be at least 8 characters.'; errEl.classList.add('show'); return; }
+    if (USERS.find(u => u.username === username)) { errEl.textContent = 'Username already exists.'; errEl.classList.add('show'); return; }
+    // Create auth user
+    const { data: signUpData, error: signUpErr } = await _sb.auth.signUp({ email, password });
+    if (signUpErr) { errEl.textContent = 'Auth error: ' + signUpErr.message; errEl.classList.add('show'); return; }
+    // Insert profile
+    const { error: profileErr } = await _sb.from('profiles').insert({
+      id: signUpData.user.id, username, full_name: name, role, is_active: true
+    });
+    if (profileErr) { errEl.textContent = 'Profile error: ' + profileErr.message; errEl.classList.add('show'); return; }
+    await loadAllUsers(); renderUserTable();
+    closeModal('addUserModal');
+    ['nu_name','nu_username','nu_email','nu_password'].forEach(id => document.getElementById(id).value = '');
+    alert('✅ User "' + username + '" created successfully!');
   }
 
   // ── INIT — hide app until login ──
