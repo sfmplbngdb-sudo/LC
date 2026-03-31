@@ -2123,7 +2123,7 @@
       <button class="modal-close" onclick="closeModal('addUserModal')">×</button>
     </div>
     <div class="modal-body">
-      <div class="alert alert-info" style="margin-bottom:14px">ℹ User will receive a confirmation email. Make sure email is correct.</div>
+      <div class="alert alert-info" style="margin-bottom:14px">ℹ Enter a real email — user will use it to login.</div>
       <div class="form-row">
         <div class="form-group">
           <label>Full Name</label>
@@ -2135,7 +2135,7 @@
         </div>
       </div>
       <div class="form-row">
-        <div class="form-group" style="flex:2">
+        <div class="form-group" style="flex:1 1 100%">
           <label>Email</label>
           <input type="email" id="nu_email" placeholder="e.g. rajesh@gmail.com" autocomplete="off">
         </div>
@@ -2166,10 +2166,10 @@
 <!-- ─────────── JAVASCRIPT ─────────── -->
 <script>
   // ══════════════════════════════════════════════
-  // SUPABASE CONFIG — paste your credentials below
+  // SUPABASE CONFIG
   // ══════════════════════════════════════════════
-  const SUPABASE_URL  = 'https://doytxhqrtdvkhypgfsfg.supabase.co';
-  const SUPABASE_ANON = 'sb_publishable_AS6Yx8NsFohpXmXOjFKMdw_zK--clbp';
+  const SUPABASE_URL  = 'https://zedttyigqcdityotqkla.supabase.co';
+  const SUPABASE_ANON = 'sb_publishable_fTLdPk4BvwhAKJJTuCgNdQ_6dng0ukb';
   const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
   // ══════════════════════════════════════════════
@@ -2187,13 +2187,11 @@
     if (!email || !pass) { errEl.textContent = 'Please enter email and password.'; errEl.classList.add('show'); return; }
     btn.textContent = 'SIGNING IN…'; btn.disabled = true;
     try {
-      // Step 1: Sign in with Supabase Auth
       const { data, error } = await _sb.auth.signInWithPassword({ email, password: pass });
       if (error || !data.user) {
-        errEl.textContent = 'Invalid email or password. Please try again.';
+        errEl.textContent = 'Invalid email or password.';
         errEl.classList.add('show'); return;
       }
-      // Step 2: Fetch profile using auth UID
       const { data: profile, error: pErr } = await _sb
         .from('profiles').select('*').eq('id', data.user.id).single();
       if (pErr || !profile) {
@@ -2201,12 +2199,10 @@
         errEl.classList.add('show'); await _sb.auth.signOut(); return;
       }
       if (!profile.is_active) {
-        errEl.textContent = 'Your account is disabled. Contact admin.';
+        errEl.textContent = 'Account is disabled. Contact admin.';
         errEl.classList.add('show'); await _sb.auth.signOut(); return;
       }
-      // Step 3: Update last login
       await _sb.from('profiles').update({ last_login_at: new Date().toISOString() }).eq('id', profile.id);
-      // Step 4: Set session
       currentUser = {
         id:        profile.id,
         username:  profile.username,
@@ -2219,7 +2215,7 @@
       if (currentUser.role === 'admin') await loadAllUsers();
       applySession();
     } catch(e) {
-      errEl.textContent = 'Connection error. Check your internet.';
+      errEl.textContent = 'Connection error. Please try again.';
       errEl.classList.add('show');
     } finally {
       btn.textContent = 'SIGN IN →'; btn.disabled = false;
@@ -2238,8 +2234,8 @@
   }
 
   async function loadAllUsers() {
-    const { data, error } = await _sb.from('profiles').select('*').order('created_at');
-    if (error || !data) return;
+    const { data } = await _sb.from('profiles').select('*').order('created_at');
+    if (!data) return;
     USERS = data.map(p => ({
       id:        p.id,
       username:  p.username,
@@ -2329,10 +2325,8 @@
     if (!email.includes('@')) { errEl.textContent = 'Enter a valid email address.'; errEl.classList.add('show'); return; }
     if (password.length < 8) { errEl.textContent = 'Password must be at least 8 characters.'; errEl.classList.add('show'); return; }
     if (USERS.find(u => u.username === username)) { errEl.textContent = 'Username already exists.'; errEl.classList.add('show'); return; }
-    // Create auth user
     const { data: signUpData, error: signUpErr } = await _sb.auth.signUp({ email, password });
     if (signUpErr) { errEl.textContent = 'Auth error: ' + signUpErr.message; errEl.classList.add('show'); return; }
-    // Insert profile
     const { error: profileErr } = await _sb.from('profiles').insert({
       id: signUpData.user.id, username, full_name: name, role, is_active: true
     });
@@ -2340,7 +2334,7 @@
     await loadAllUsers(); renderUserTable();
     closeModal('addUserModal');
     ['nu_name','nu_username','nu_email','nu_password'].forEach(id => document.getElementById(id).value = '');
-    alert('✅ User "' + username + '" created successfully!');
+    alert('✅ User "' + username + '" created! They can now login with their email.');
   }
 
   // ── INIT — hide app until login ──
