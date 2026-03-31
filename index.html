@@ -2136,9 +2136,15 @@
       </div>
       <div class="form-row">
         <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="nu_email" placeholder="e.g. rajesh@gmail.com" autocomplete="off">
+        </div>
+        <div class="form-group">
           <label>Password</label>
           <input type="password" id="nu_password" placeholder="Min 8 characters" autocomplete="new-password">
         </div>
+      </div>
+      <div class="form-row">
         <div class="form-group">
           <label>Role</label>
           <select id="nu_role">
@@ -2172,16 +2178,15 @@
   let USERS = [];
   let currentUser = null;
 
-  // Login using Supabase Auth (email = username@kamakya.local or real email)
+  // Login using Supabase Auth — user types their real email
   async function doLogin() {
-    const uname = document.getElementById('loginUser').value.trim().toLowerCase();
+    const email = document.getElementById('loginUser').value.trim().toLowerCase();
     const pass  = document.getElementById('loginPass').value;
     const errEl = document.getElementById('loginError');
     errEl.classList.remove('show');
-    if (!uname || !pass) { errEl.textContent = 'Please enter username and password.'; errEl.classList.add('show'); return; }
+    if (!email || !pass) { errEl.textContent = 'Please enter email and password.'; errEl.classList.add('show'); return; }
 
-    // Sign in — email is stored as username@kamakya.local in Supabase Auth
-    const email = uname.includes('@') ? uname : uname + '@kamakya.local';
+    // Sign in with real email directly
     const { data, error } = await _sb.auth.signInWithPassword({ email, password: pass });
     if (error || !data.user) {
       errEl.textContent = 'Invalid credentials. Please try again.';
@@ -2321,7 +2326,8 @@
     if (!name || !username || !password) { errEl.textContent = "All fields are required."; errEl.classList.add("show"); return; }
     if (password.length < 8) { errEl.textContent = "Password must be at least 8 characters."; errEl.classList.add("show"); return; }
     if (USERS.find(u => u.username === username)) { errEl.textContent = "Username already exists."; errEl.classList.add("show"); return; }
-    const email = username + "@kamakya.local";
+    const email = document.getElementById("nu_email").value.trim().toLowerCase();
+    if (!email || !email.includes("@")) { errEl.textContent = "Valid email is required."; errEl.classList.add("show"); return; }
     const { data: signUpData, error: signUpError } = await _sb.auth.signUp({ email, password });
     if (signUpError) { errEl.textContent = signUpError.message; errEl.classList.add("show"); return; }
     const { error: profileError } = await _sb.from("profiles").insert({ id: signUpData.user.id, username, full_name: name, role, is_active: true });
@@ -2331,6 +2337,7 @@
     closeModal("addUserModal");
     document.getElementById("nu_name").value = "";
     document.getElementById("nu_username").value = "";
+    document.getElementById("nu_email").value = "";
     document.getElementById("nu_password").value = "";
     alert("u2705 User u201c" + username + "u201d created successfully!");
   }
